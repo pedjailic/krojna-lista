@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Krojna lista stolarije</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EEF2F3; --surface:#FFFFFF; --ink:#16242C; --muted:#5A6A72; --rule:#D3DCE0;
+  --accent:#0E6F7E; --accent-ink:#FFFFFF; --accent-soft:#D8EDF0;
+  --glass:#CFE6EB; --profile:#F9FBFB; --opening:#9AAAB1;
+  --warn:#8A5208; --warn-soft:#FBEBD2; --err:#A1262B; --err-soft:#F9E0E0;
+  --bar-a:#0E6F7E; --bar-b:#4F95A1; --offcut:#E5D6BC; --offcut-ok:#BFD9B2;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1519; --surface:#152026; --ink:#E1EAED; --muted:#92A4AC; --rule:#28383F;
+    --accent:#5CC3D2; --accent-ink:#06282E; --accent-soft:#163A41;
+    --glass:#1C4A53; --profile:#223139; --opening:#5E717A;
+    --warn:#E9B266; --warn-soft:#352612; --err:#F08A8E; --err-soft:#3A1719;
+    --bar-a:#4DB2C1; --bar-b:#2D7884; --offcut:#56482F; --offcut-ok:#34502B;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1519; --surface:#152026; --ink:#E1EAED; --muted:#92A4AC; --rule:#28383F;
+  --accent:#5CC3D2; --accent-ink:#06282E; --accent-soft:#163A41;
+  --glass:#1C4A53; --profile:#223139; --opening:#5E717A;
+  --warn:#E9B266; --warn-soft:#352612; --err:#F08A8E; --err-soft:#3A1719;
+  --bar-a:#4DB2C1; --bar-b:#2D7884; --offcut:#56482F; --offcut-ok:#34502B;
+}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 48px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h1{font:700 clamp(30px,5vw,44px)/1 var(--display);letter-spacing:.01em;margin:0 0 10px;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.top{margin-bottom:24px}
+.grid{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:880px){.panel{position:static}}
+fieldset{border:0;padding:0;margin:0 0 18px;display:grid;gap:10px;min-width:0}
+legend{font:600 13px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding:0}
+label{display:grid;gap:4px;font-weight:500;font-size:14px}
+.u{font:400 12px var(--mono);color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=number]{width:100%;font:500 17px var(--mono);padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=number]:focus-visible,button:focus-visible,summary:focus-visible,.type input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.type{position:relative;cursor:pointer}
+.type input{position:absolute;opacity:0;pointer-events:none}
+.type span{display:flex;gap:8px;align-items:center;padding:8px;border:1px solid var(--rule);border-radius:6px;font-size:13px;line-height:1.25;font-weight:500;min-height:52px;background:var(--surface)}
+.type svg{flex:none;width:30px;height:36px}
+.type svg rect,.type svg line,.type svg path{fill:none;stroke:var(--muted);stroke-width:1.4}
+.type input:checked+span{border-color:var(--accent);background:var(--accent-soft)}
+.type input:checked+span svg rect,.type input:checked+span svg line,.type input:checked+span svg path{stroke:var(--accent)}
+details{border-top:1px solid var(--rule);padding-top:14px}
+summary{cursor:pointer;font:600 13px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.note{font-size:13px;color:var(--warn);background:var(--warn-soft);padding:8px 10px;border-radius:6px;margin:12px 0}
+.pgroup{margin:14px 0 6px;font:500 12px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.params{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.params label{font-size:12.5px;font-weight:500}
+.params input{font-size:15px;padding:7px 8px}
+.btn{font:600 14px var(--body);padding:9px 14px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.formula{font:12.5px/1.6 var(--mono);color:var(--muted);margin-top:14px;overflow-x:auto}
+.formula b{color:var(--ink);font-weight:500}
+.out{display:grid;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;min-width:0}
+.card h2{font:600 22px/1.1 var(--display);letter-spacing:.02em;margin:0}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.cmeta{font:13px var(--mono);color:var(--muted)}
+.errors{background:var(--err-soft);color:var(--err);border-radius:8px;padding:10px 14px;font-weight:500}
+.errors p{margin:0}
+.draw{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:center}
+@media (max-width:620px){.draw{grid-template-columns:minmax(0,1fr)}}
+.svgbox{background:var(--bg);border-radius:8px;padding:8px}
+.svgbox svg{display:block;width:100%;height:auto;max-height:440px}
+svg .op{fill:none;stroke:var(--opening);stroke-dasharray:6 4;stroke-width:1}
+svg .pr{fill:var(--profile);stroke:var(--ink);stroke-width:1.2}
+svg .gl{fill:var(--glass);stroke:var(--ink);stroke-width:.8}
+svg .sym{fill:none;stroke:var(--accent);stroke-width:1;stroke-dasharray:5 4}
+svg .dim{stroke:var(--muted);stroke-width:1}
+svg .dt{fill:var(--ink);font-family:var(--mono)}
+svg .gt{fill:var(--ink);font-family:var(--mono);opacity:.85}
+svg .ft{fill:var(--accent);font-family:var(--display);font-weight:600}
+svg *{vector-effect:non-scaling-stroke}
+.facts{display:grid;gap:0;margin:0}
+.facts div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--rule)}
+.facts div:last-child{border-bottom:0}
+.facts dt{color:var(--muted);font-size:14px}
+.facts dd{margin:0;font:500 15px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--rule)}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.len{font-weight:500;font-size:15px}
+.tag{display:inline-block;font:500 11.5px var(--mono);padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--ink);white-space:nowrap}
+tfoot td{font-weight:600;border-top:1px solid var(--rule);border-bottom:0}
+.opt{display:grid;gap:18px}
+.og h3{font:600 17px/1.2 var(--display);letter-spacing:.02em;margin:0 0 4px}
+.og p{margin:0 0 8px;font:13px var(--mono);color:var(--muted)}
+.bars{display:grid;gap:5px}
+.bar{display:flex;height:26px;border-radius:4px;overflow:hidden;background:var(--bg);border:1px solid var(--rule)}
+.seg{display:flex;align-items:center;justify-content:center;font:500 11px var(--mono);color:#fff;border-right:2px solid var(--surface);min-width:0;overflow:hidden;white-space:nowrap}
+.seg:nth-child(odd){background:var(--bar-a)}
+.seg:nth-child(even){background:var(--bar-b)}
+.seg.off{background:var(--offcut);color:var(--ink);border-right:0}
+.seg.off.ok{background:var(--offcut-ok)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.toast{font:500 13px var(--mono);color:var(--accent)}
+input[type=text],input[type=date],textarea{width:100%;font:15px var(--body);padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink)}
+textarea{resize:vertical;min-height:60px}
+input[type=text]:focus-visible,input[type=date]:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ohead{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.ohead .wide{grid-column:1/-1}
+.qty{width:74px!important;font-size:15px!important;padding:5px 6px!important;text-align:right}
+.x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:4px}
+.x:hover{color:var(--err);background:var(--err-soft)}
+.x:focus-visible{outline:2px solid var(--accent)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--rule);border-radius:8px}
+.obar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:14px 0}
+.obar .tot{font:500 14px var(--mono)}
+.chk{display:flex;gap:8px;align-items:center;font-weight:500;font-size:14px;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+pre.preview{background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:14px;font:13px/1.55 var(--mono);white-space:pre;overflow-x:auto;margin:0 0 12px;color:var(--ink)}
+.acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn.danger{color:var(--err)}
+.btn.danger.arm{background:var(--err);color:#fff;border-color:var(--err)}
+.sub{font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
+@media (prefers-reduced-motion:no-preference){.type span,.btn{transition:border-color .15s,background .15s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">PVC · ALU stolarija</p>
+    <h1>Krojna lista stolarije</h1>
+    <p class="lede">Unesite zidarski otvor. Dobijate mere štoka i krila, krojnu listu profila sa uglovima sečenja, dimenzije stakla i raspored sečenja šipki.</p>
+  </header>
+
+  <div class="grid">
+    <aside class="panel">
+      <form id="f" autocomplete="off">
+        <fieldset>
+          <legend>Zidarski otvor</legend>
+          <div class="row2">
+            <label for="W">Širina <span class="u">mm</span><input id="W" type="number" inputmode="numeric" min="300" step="1" value="1400"></label>
+            <label for="H">Visina <span class="u">mm</span><input id="H" type="number" inputmode="numeric" min="300" step="1" value="1400"></label>
+          </div>
+          <div class="row2">
+            <label for="Q">Broj komada<input id="Q" type="number" inputmode="numeric" min="1" step="1" value="1"></label>
+            <label for="OZ">Oznaka pozicije<input id="OZ" type="text" value="P1" maxlength="30"></label>
+          </div>
+          <label for="GT">Tip stakla<input id="GT" type="text" list="gt-list" value="4-16-4 Low-E, Ar" maxlength="60"></label>
+          <datalist id="gt-list">
+            <option value="4-16-4"></option>
+            <option value="4-16-4 Low-E, Ar"></option>
+            <option value="4-12-4-12-4 Low-E, Ar (troslojno)"></option>
+            <option value="4-14-4-14-4 Low-E, Ar (troslojno)"></option>
+            <option value="33.1-16-4 Low-E (sigurnosno)"></option>
+            <option value="4 kaljeno-16-4 kaljeno"></option>
+            <option value="4 ornament-16-4 Low-E"></option>
+          </datalist>
+        </fieldset>
+
+        <fieldset>
+          <legend>Tip pozicije</legend>
+          <div class="types" id="types"></div>
+          <label for="POS" id="posWrap" hidden><span><span id="posLabel">Osa srednjaka od leve ivice štoka</span> <span class="u">mm</span></span><input id="POS" type="number" inputmode="numeric" step="1"></label>
+        </fieldset>
+
+        <details id="odb">
+          <summary>Odbici sistema</summary>
+          <p class="note">Ovo su okvirne vrednosti za PVC sistem od 70 mm sa 5 komora. Pre sečenja upišite odbitke iz kataloga vašeg sistema. Za ALU stavite dodatak za varenje na 0.</p>
+          <div id="params"></div>
+          <div style="margin-top:14px"><button type="button" class="btn" id="reset">Vrati podrazumevane odbitke</button></div>
+          <div class="formula">
+            <b>Štok</b> = otvor − montažni zazor<br>
+            <b>Svetli otvor štoka</b> = štok − 2 × štok profil<br>
+            <b>Krilo</b> = svetlo polja + 2 × preklop<br>
+            <b>Staklo</b> = svetlo profila + 2 × (falc − zazor stakla)<br>
+            <b>Rez štoka/krila</b> = mera + 2 × dodatak za varenje
+          </div>
+        </details>
+      </form>
+    </aside>
+
+    <main class="out" id="out">
+      <div class="errors" id="errors" hidden></div>
+
+      <section class="card">
+        <div class="chead"><h2>Pozicija</h2><span class="cmeta" id="typeName"></span></div>
+        <div class="draw">
+          <div class="svgbox" id="svg"></div>
+          <dl class="facts" id="facts"></dl>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="chead">
+          <h2>Krojna lista profila</h2>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="toast" id="toast" aria-live="polite"></span><button type="button" class="btn primary" id="copy">Kopiraj za Excel</button></div>
+        </div>
+        <div class="tbl"><table id="cuts"></table></div>
+      </section>
+
+      <section class="card">
+        <div class="chead">
+          <div><h2>Stakla</h2><span class="cmeta" id="glassMeta"></span></div>
+          <div class="acts"><span class="toast" id="toastAdd" aria-live="polite"></span><button type="button" class="btn primary" id="addOrder">Dodaj u porudžbinu</button></div>
+        </div>
+        <div class="tbl"><table id="glass"></table></div>
+      </section>
+
+      <section class="card" id="order">
+        <div class="chead"><h2>Porudžbina stakla</h2><span class="cmeta" id="orderNo"></span></div>
+        <div class="ohead">
+          <label for="o-kupac">Naručilac (vaša firma)<input id="o-kupac" type="text" maxlength="80" placeholder="npr. Stolarija Petrović"></label>
+          <label for="o-dob">Dobavljač stakla<input id="o-dob" type="text" maxlength="80" placeholder="npr. Staklara Jovanović"></label>
+          <label for="o-rok">Rok isporuke<input id="o-rok" type="date"></label>
+          <label for="o-nap" class="wide">Napomena<textarea id="o-nap" maxlength="400" placeholder="npr. distancer crni, isporuka na adresu radionice"></textarea></label>
+        </div>
+        <div id="orderList"></div>
+        <div class="obar" id="orderBar" hidden>
+          <label class="chk" for="o-merge"><input id="o-merge" type="checkbox" checked> Spoji iste dimenzije i tip stakla</label>
+          <span class="tot" id="orderTot"></span>
+        </div>
+        <div id="orderOut" hidden>
+          <div class="sub">Tekst porudžbine</div>
+          <pre class="preview" id="orderPre"></pre>
+          <div class="acts">
+            <button type="button" class="btn primary" id="copyOrder">Kopiraj porudžbinu</button>
+            <button type="button" class="btn" id="copyOrderX">Kopiraj za Excel</button>
+            <button type="button" class="btn danger" id="clearOrder">Obriši porudžbinu</button>
+            <span class="toast" id="toastOrder" aria-live="polite"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="chead"><h2>Sečenje šipki</h2><span class="cmeta" id="optMeta"></span></div>
+        <div class="opt" id="opt"></div>
+        <div class="legend"><span><i style="background:var(--bar-a)"></i>rez</span><span><i style="background:var(--offcut-ok)"></i>upotrebljiv ostatak</span><span><i style="background:var(--offcut)"></i>otpad</span></div>
+      </section>
+    </main>
+  </div>
+
+  <footer>Proračun radi u vašem pregledaču i ne šalje podatke nigde. Odbici koje promenite pamte se na ovom uređaju. Prve pozicije posle podešavanja uvek proverite ručno pre sečenja stakla.</footer>
+</div>
+
+<script>
+(function(){
+const DEF={zBok:10,zGore:10,zDole:10,stok:64,krilo:77,preklop:8,srednjak:84,sredDod:3,varenje:3,falc:20,zazorStakla:5,sipka:6500,rez:4,minOstatak:500};
+const META=[
+  ['Montaža',[['zBok','Zazor levo/desno, po strani'],['zGore','Zazor gore'],['zDole','Zazor dole']]],
+  ['Profili',[['stok','Štok, vidna širina'],['krilo','Krilo, vidna širina'],['preklop','Preklop krila na štok'],['srednjak','Srednjak (T), širina'],['sredDod','Srednjak, dodatak po kraju'],['varenje','Dodatak za varenje po kraju']]],
+  ['Staklo',[['falc','Dubina falca'],['zazorStakla','Zazor stakla po strani']]],
+  ['Sečenje',[['sipka','Dužina šipke'],['rez','Širina reza testere'],['minOstatak','Najmanji upotrebljiv ostatak']]]
+];
+const TYPES={
+  fiks:{name:'Fiksni',split:'v',fields:['F']},
+  k1:{name:'Jednokrilni',split:'v',fields:['K']},
+  k2:{name:'Dvokrilni sa srednjakom',split:'v',fields:['K','K']},
+  kf:{name:'Krilo + fiks',split:'v',fields:['K','F'],custom:true},
+  k3:{name:'Krilo – fiks – krilo',split:'v',fields:['K','F','K']},
+  nad:{name:'Krilo + nadsvetlo',split:'h',fields:['F','K'],custom:true}
+};
+const $=id=>document.getElementById(id);
+let P=Object.assign({},DEF);
+try{const s=JSON.parse(localStorage.getItem('kl.params')||'null'); if(s&&typeof s==='object'){for(const k in DEF){if(typeof s[k]==='number'&&isFinite(s[k]))P[k]=s[k];}}}catch(e){}
+let type='k2', posTouched=false;
+try{const t=localStorage.getItem('kl.type'); if(t&&TYPES[t])type=t;}catch(e){}
+
+const fmt2=v=>(Math.round(v*100)/100).toFixed(2).replace('.',',');
+const fmt=v=>{const r=Math.round(v*10)/10; return String(r).replace('.',',');};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// type chips
+function glyph(t){
+  const T=TYPES[t]; const w=26,h=32,x0=2,y0=2; let s=`<svg viewBox="0 0 30 36" aria-hidden="true"><rect x="${x0}" y="${y0}" width="${w}" height="${h}"/>`;
+  const n=T.fields.length;
+  T.fields.forEach((k,i)=>{
+    let fx,fy,fw,fh;
+    if(T.split==='v'){fw=w/n;fx=x0+i*fw;fy=y0;fh=h;}else{fh=i===0?h*0.3:h*0.7;fy=i===0?y0:y0+h*0.3;fx=x0;fw=w;}
+    if(i>0){s+=T.split==='v'?`<line x1="${fx}" y1="${y0}" x2="${fx}" y2="${y0+h}"/>`:`<line x1="${x0}" y1="${fy}" x2="${x0+w}" y2="${fy}"/>`;}
+    if(k==='K'){const right=(T.split==='v'&&n>1&&i>=n/2); const hx=right?fx+fw-2:fx+2, tx=right?fx+2:fx+fw-2; s+=`<path d="M${hx} ${fy+2} L${tx} ${fy+fh/2} L${hx} ${fy+fh-2}"/>`;}
+  });
+  return s+'</svg>';
+}
+$('types').innerHTML=Object.keys(TYPES).map(t=>`<label class="type"><input type="radio" name="tip" id="tip-${t}" value="${t}"${t===type?' checked':''}><span>${glyph(t)}${esc(TYPES[t].name)}</span></label>`).join('');
+
+// params
+$('params').innerHTML=META.map(([g,items])=>`<div class="pgroup">${g}</div><div class="params">${items.map(([k,l])=>`<label for="p-${k}">${esc(l)} <span class="u">mm</span><input id="p-${k}" data-k="${k}" type="number" step="0.5" value="${P[k]}"></label>`).join('')}</div>`).join('');
+
+function num(id){const v=parseFloat($(id).value);return isFinite(v)?v:0;}
+
+function defaultPos(Wf,Hf){
+  const T=TYPES[type];
+  if(T.split==='h') return Math.round(Math.min(500,Hf/3));
+  return Math.round(Wf/2);
+}
+
+function compute(){
+  const W=num('W'),H=num('H'),Q=Math.max(1,Math.round(num('Q')||1));
+  const T=TYPES[type], v=P.varenje, g=P.falc-P.zazorStakla, M=P.srednjak;
+  const errs=[];
+  if(W<300||H<300) errs.push('Unesite otvor od najmanje 300 × 300 mm.');
+  const Wf=W-2*P.zBok, Hf=H-P.zGore-P.zDole;
+  const Lw=Wf-2*P.stok, Lh=Hf-2*P.stok;
+  if(T.custom){
+    const pw=$('posWrap'); pw.hidden=false;
+    $('posLabel').textContent=T.split==='h'?'Osa prečke od gornje ivice štoka':'Osa srednjaka od leve ivice štoka';
+    if(!posTouched||!$('POS').value) $('POS').value=defaultPos(Wf,Hf);
+  } else $('posWrap').hidden=true;
+  const pos=num('POS');
+  const n=T.fields.length, fields=[], mullions=[];
+  if(T.split==='v'){
+    let ws;
+    if(T.custom&&n===2){const f1=pos-P.stok-M/2; ws=[f1,Lw-M-f1];}
+    else{const fw=(Lw-(n-1)*M)/n; ws=Array(n).fill(fw);}
+    let x=P.stok;
+    ws.forEach((w,i)=>{fields.push({x,y:P.stok,w,h:Lh,kind:T.fields[i],hinge:(n>1&&i>=n/2)?'R':'L'}); x+=w; if(i<n-1){mullions.push({x,y:P.stok,w:M,h:Lh,dir:'v',len:Lh+2*P.sredDod}); x+=M;}});
+  } else {
+    const f1=pos-P.stok-M/2, hs=[f1,Lh-M-f1]; let y=P.stok;
+    hs.forEach((h,i)=>{fields.push({x:P.stok,y,w:Lw,h,kind:T.fields[i],hinge:'L'}); y+=h; if(i<n-1){mullions.push({x:P.stok,y,w:Lw,h:M,dir:'h',len:Lw+2*P.sredDod}); y+=M;}});
+  }
+  const cuts=[], glass=[];
+  const add=(profil,el,len,kom,ugao)=>cuts.push({profil,el,len,kom:kom*Q,ugao});
+  add('Štok','Štok, gore i dole',Wf+2*v,2,'45° / 45°');
+  add('Štok','Štok, levo i desno',Hf+2*v,2,'45° / 45°');
+  mullions.forEach((m,i)=>add('Srednjak',m.dir==='v'?`Srednjak ${mullions.length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
+  let kc=0,fc=0;
+  fields.forEach(f=>{
+    if(f.kind==='K'){
+      kc++; const nm=`Krilo ${kc}`;
+      f.sw=f.w+2*P.preklop; f.sh=f.h+2*P.preklop;
+      f.lw=f.sw-2*P.krilo; f.lh=f.sh-2*P.krilo;
+      f.name=nm;
+      add('Krilo',`${nm}, gore i dole`,f.sw+2*v,2,'45° / 45°');
+      add('Krilo',`${nm}, levo i desno`,f.sh+2*v,2,'45° / 45°');
+      add('Lajsna',`Lajsna ${nm.toLowerCase()}, horizontalno`,f.lw,2,'45° / 45°');
+      add('Lajsna',`Lajsna ${nm.toLowerCase()}, vertikalno`,f.lh,2,'45° / 45°');
+      f.gw=f.lw+2*g; f.gh=f.lh+2*g;
+      if(f.lw<=0||f.lh<=0) errs.push(`${nm} je premalo za zadate odbitke.`);
+    } else {
+      fc++; const nm=`Fiks ${fc}`; f.name=nm;
+      add('Lajsna',`Lajsna ${nm.toLowerCase()}, horizontalno`,f.w,2,'45° / 45°');
+      add('Lajsna',`Lajsna ${nm.toLowerCase()}, vertikalno`,f.h,2,'45° / 45°');
+      f.gw=f.w+2*g; f.gh=f.h+2*g;
+    }
+    glass.push({name:f.name,w:f.gw,h:f.gh,kom:Q});
+  });
+  if(fields.some(f=>f.w<150||f.h<150)) errs.push('Neko polje je uže od 150 mm. Proverite otvor, tip pozicije ili položaj srednjaka.');
+  const maxLen=Math.max(...cuts.map(c=>c.len));
+  if(maxLen>P.sipka) errs.push(`Najduži rez (${fmt(maxLen)} mm) je duži od šipke (${fmt(P.sipka)} mm).`);
+  return {W,H,Q,Wf,Hf,Lw,Lh,fields,mullions,cuts,glass,errs,sashes:kc};
+}
+
+function optimize(lengths,L,kerf){
+  const arr=lengths.slice().sort((a,b)=>b-a), bars=[];
+  for(const len of arr){
+    if(len>L) continue;
+    let b=bars.find(b=>b.rem>=len);
+    if(!b){b={cuts:[],rem:L};bars.push(b);}
+    b.cuts.push(len); b.rem-=len+kerf;
+  }
+  bars.forEach(b=>b.rem=Math.max(0,b.rem));
+  return bars;
+}
+
+function svg(r){
+  const {W,H,Wf,Hf,fields,mullions}=r; const s=Math.max(W,H), fs=s*0.034, pad=s*0.13;
+  const vx=-P.zBok-pad, vy=-P.zGore-pad, vw=W+pad*1.6, vh=H+pad*1.6;
+  let o=`<svg viewBox="${vx} ${vy} ${vw} ${vh}" role="img" aria-label="Crtež pozicije ${fmt(W)} × ${fmt(H)} mm">`;
+  o+=`<rect class="op" x="${-P.zBok}" y="${-P.zGore}" width="${W}" height="${H}"/>`;
+  o+=`<rect class="pr" x="0" y="0" width="${Wf}" height="${Hf}"/>`;
+  o+=`<rect class="pr" x="${P.stok}" y="${P.stok}" width="${r.Lw}" height="${r.Lh}"/>`;
+  mullions.forEach(m=>{o+=`<rect class="pr" x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}"/>`;});
+  fields.forEach(f=>{
+    let gx,gy,gw,gh;
+    if(f.kind==='K'){
+      const sx=f.x-P.preklop, sy=f.y-P.preklop;
+      o+=`<rect class="pr" x="${sx}" y="${sy}" width="${f.sw}" height="${f.sh}"/>`;
+      gx=sx+P.krilo; gy=sy+P.krilo; gw=f.lw; gh=f.lh;
+    } else {gx=f.x;gy=f.y;gw=f.w;gh=f.h;}
+    if(gw>0&&gh>0){
+      o+=`<rect class="gl" x="${gx}" y="${gy}" width="${gw}" height="${gh}"/>`;
+      if(f.kind==='K'){
+        const hx=f.hinge==='R'?gx+gw:gx, tx=f.hinge==='R'?gx:gx+gw;
+        o+=`<path class="sym" d="M${hx} ${gy} L${tx} ${gy+gh/2} L${hx} ${gy+gh} M${gx} ${gy+gh} L${gx+gw/2} ${gy} L${gx+gw} ${gy+gh}"/>`;
+      } else {
+        o+=`<text class="ft" x="${gx+gw/2}" y="${gy+gh/2-fs*0.2}" font-size="${fs*1.3}" text-anchor="middle">F</text>`;
+      }
+      o+=`<text class="gt" x="${gx+gw/2}" y="${gy+gh/2+fs*1.3}" font-size="${fs*0.72}" text-anchor="middle">${fmt(f.gw)}×${fmt(f.gh)}</text>`;
+    }
+  });
+  const ty=-P.zGore-pad*0.45, lx=-P.zBok-pad*0.45;
+  o+=`<line class="dim" x1="${-P.zBok}" y1="${ty}" x2="${-P.zBok+W}" y2="${ty}"/><line class="dim" x1="${-P.zBok}" y1="${ty-fs*0.4}" x2="${-P.zBok}" y2="${ty+fs*0.4}"/><line class="dim" x1="${-P.zBok+W}" y1="${ty-fs*0.4}" x2="${-P.zBok+W}" y2="${ty+fs*0.4}"/>`;
+  o+=`<text class="dt" x="${-P.zBok+W/2}" y="${ty-fs*0.45}" font-size="${fs}" text-anchor="middle">${fmt(W)}</text>`;
+  o+=`<line class="dim" x1="${lx}" y1="${-P.zGore}" x2="${lx}" y2="${-P.zGore+H}"/><line class="dim" x1="${lx-fs*0.4}" y1="${-P.zGore}" x2="${lx+fs*0.4}" y2="${-P.zGore}"/><line class="dim" x1="${lx-fs*0.4}" y1="${-P.zGore+H}" x2="${lx+fs*0.4}" y2="${-P.zGore+H}"/>`;
+  o+=`<text class="dt" x="${lx-fs*0.45}" y="${-P.zGore+H/2}" font-size="${fs}" text-anchor="middle" transform="rotate(-90 ${lx-fs*0.45} ${-P.zGore+H/2})">${fmt(H)}</text>`;
+  return o+'</svg>';
+}
+
+let last=null;
+function render(){
+  const r=compute(); last=r;
+  const e=$('errors'); if(r.errs.length){e.hidden=false;e.innerHTML=r.errs.map(x=>`<p>${esc(x)}</p>`).join('');} else e.hidden=true;
+  $('typeName').textContent=`${TYPES[type].name}${r.Q>1?' · '+r.Q+' kom':''}`;
+  $('svg').innerHTML=svg(r);
+  const gArea=r.glass.reduce((a,g)=>a+g.w*g.h*g.kom,0)/1e6;
+  const sashTxt=r.fields.filter(f=>f.kind==='K').map(f=>`${fmt(f.sw)} × ${fmt(f.sh)}`);
+  $('facts').innerHTML=[
+    ['Zidarski otvor',`${fmt(r.W)} × ${fmt(r.H)}`],
+    ['Spoljna mera štoka',`${fmt(r.Wf)} × ${fmt(r.Hf)}`],
+    ['Svetli otvor štoka',`${fmt(r.Lw)} × ${fmt(r.Lh)}`],
+    ...sashTxt.map((t,i)=>[`Krilo ${i+1}, spoljna mera`,t]),
+    ['Staklo ukupno',`${fmt(Math.round(gArea*100)/100)} m²`]
+  ].map(([a,b])=>`<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('');
+
+  $('cuts').innerHTML=`<thead><tr><th>Profil</th><th>Element</th><th class="n">Dužina mm</th><th class="n">Kom</th><th class="n">Rez</th></tr></thead><tbody>`+
+    r.cuts.map(c=>`<tr><td><span class="tag">${esc(c.profil)}</span></td><td>${esc(c.el)}</td><td class="n len">${fmt(c.len)}</td><td class="n">${c.kom}</td><td class="n">${esc(c.ugao)}</td></tr>`).join('')+'</tbody>';
+
+  const gt=$('GT').value.trim()||'—';
+  $('glass').innerHTML=`<thead><tr><th>Polje</th><th class="n">Širina mm</th><th class="n">Visina mm</th><th class="n">Kom</th><th class="n">m²</th><th>Tip stakla</th></tr></thead><tbody>`+
+    r.glass.map(g=>`<tr><td>${esc(g.name)}</td><td class="n len">${fmt(g.w)}</td><td class="n len">${fmt(g.h)}</td><td class="n">${g.kom}</td><td class="n">${fmt(Math.round(g.w*g.h*g.kom/1e4)/100)}</td><td>${esc(gt)}</td></tr>`).join('')+
+    `</tbody><tfoot><tr><td colspan="3">Ukupno</td><td class="n">${r.glass.reduce((a,g)=>a+g.kom,0)}</td><td class="n">${fmt(Math.round(gArea*100)/100)}</td><td></td></tr></tfoot>`;
+  $('glassMeta').textContent=`zazor ${fmt(P.zazorStakla)} mm po strani`;
+  $('addOrder').disabled=r.errs.length>0;
+
+  const groups={}; r.cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);});
+  let totalBars=0;
+  $('opt').innerHTML=Object.entries(groups).map(([prof,lens])=>{
+    const bars=optimize(lens,P.sipka,P.rez); totalBars+=bars.length;
+    const used=lens.filter(l=>l<=P.sipka).reduce((a,b)=>a+b,0), util=bars.length?used/(bars.length*P.sipka)*100:0;
+    const shown=bars.slice(0,12);
+    return `<div class="og"><h3>${esc(prof)}</h3><p>${bars.length} ${bars.length===1?'šipka':(bars.length<5?'šipke':'šipki')} × ${fmt(P.sipka)} mm · iskorišćenje ${fmt(Math.round(util))}% · ${lens.length} rezova</p><div class="bars">`+
+      shown.map(b=>`<div class="bar">${b.cuts.map(l=>`<span class="seg" style="flex:0 0 ${l/P.sipka*100}%" title="${fmt(l)} mm">${l/P.sipka>0.09?fmt(l):''}</span>`).join('')}${b.rem>0?`<span class="seg off${b.rem>=P.minOstatak?' ok':''}" style="flex:1 1 auto" title="ostatak ${fmt(b.rem)} mm">${b.rem/P.sipka>0.09?fmt(b.rem):''}</span>`:''}</div>`).join('')+
+      (bars.length>12?`<p>i još ${bars.length-12} šipki</p>`:'')+`</div></div>`;
+  }).join('');
+  $('optMeta').textContent=`ukupno ${totalBars} šipki · rez ${fmt(P.rez)} mm`;
+}
+
+// events
+$('f').addEventListener('input',ev=>{
+  const t=ev.target;
+  if(t.name==='tip'){type=t.value;posTouched=false;$('POS').value='';try{localStorage.setItem('kl.type',type);}catch(e){}}
+  if(t.id==='POS')posTouched=true;
+  if(t.dataset&&t.dataset.k){const v=parseFloat(t.value); if(isFinite(v)){P[t.dataset.k]=v;try{localStorage.setItem('kl.params',JSON.stringify(P));}catch(e){}}}
+  render();
+});
+$('f').addEventListener('submit',e=>e.preventDefault());
+$('reset').addEventListener('click',()=>{P=Object.assign({},DEF);for(const k in P)$('p-'+k).value=P[k];try{localStorage.removeItem('kl.params');}catch(e){}render();});
+$('copy').addEventListener('click',()=>{
+  if(!last)return;
+  const lines=[`Pozicija\t${TYPES[type].name}`,`Otvor\t${fmt(last.W)} x ${fmt(last.H)}`,`Štok\t${fmt(last.Wf)} x ${fmt(last.Hf)}`,`Komada\t${last.Q}`,'','Profil\tElement\tDužina mm\tKom\tRez',
+    ...last.cuts.map(c=>`${c.profil}\t${c.el}\t${fmt(c.len)}\t${c.kom}\t${c.ugao}`),'','Staklo\tŠirina mm\tVisina mm\tKom',
+    ...last.glass.map(g=>`${g.name}\t${fmt(g.w)}\t${fmt(g.h)}\t${g.kom}`)];
+  const txt=lines.join('\n'), toast=$('toast');
+  const done=m=>{toast.textContent=m;setTimeout(()=>toast.textContent='',2500);};
+  try{navigator.clipboard.writeText(txt).then(()=>done('Kopirano, nalepite u Excel'),()=>fallback());}catch(e){fallback();}
+  function fallback(){const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();done(ok?'Kopirano, nalepite u Excel':'Kopiranje nije uspelo, označite tabelu ručno');}
+});
+// ---------- porudžbina stakla ----------
+const today=new Date();
+const pad2=n=>String(n).padStart(2,'0');
+const dateSr=d=>`${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}.`;
+let O={no:'',items:[],head:{kupac:'',dob:'',rok:'',nap:''},merge:true,seq:1};
+try{const s=JSON.parse(localStorage.getItem('kl.order')||'null'); if(s&&Array.isArray(s.items)){O=Object.assign(O,s);O.head=Object.assign({kupac:'',dob:'',rok:'',nap:''},s.head||{});}}catch(e){}
+function newNo(){return `${today.getFullYear()}${pad2(today.getMonth()+1)}${pad2(today.getDate())}-${pad2(Math.floor(Math.random()*90)+10)}`;}
+if(!O.no)O.no=newNo();
+const saveO=()=>{try{localStorage.setItem('kl.order',JSON.stringify(O));}catch(e){}};
+[['o-kupac','kupac'],['o-dob','dob'],['o-rok','rok'],['o-nap','nap']].forEach(([id,k])=>{
+  $(id).value=O.head[k]||'';
+  $(id).addEventListener('input',()=>{O.head[k]=$(id).value;saveO();orderSummary();});
+});
+$('o-merge').checked=!!O.merge;
+$('o-merge').addEventListener('change',()=>{O.merge=$('o-merge').checked;saveO();orderSummary();});
+
+function rows(){
+  if(!O.merge) return O.items.map(i=>({w:i.w,h:i.h,kom:i.kom,tip:i.tip,poz:`${i.oz} ${i.polje.toLowerCase()}`}));
+  const m=new Map();
+  O.items.forEach(i=>{const k=`${i.w}|${i.h}|${i.tip}`; const r=m.get(k); const p=`${i.oz} ${i.polje.toLowerCase()}`;
+    if(r){r.kom+=i.kom; if(!r.pozs.includes(p))r.pozs.push(p);} else m.set(k,{w:i.w,h:i.h,kom:i.kom,tip:i.tip,pozs:[p]});});
+  return [...m.values()].sort((a,b)=>a.tip.localeCompare(b.tip)||b.w*b.h-a.w*a.h).map(r=>({w:r.w,h:r.h,kom:r.kom,tip:r.tip,poz:r.pozs.join(', ')}));
+}
+function orderText(){
+  const R=rows(), h=O.head;
+  const totK=R.reduce((a,r)=>a+r.kom,0), totM=R.reduce((a,r)=>a+r.w*r.h*r.kom,0)/1e6;
+  const pw=Math.max(...R.map(r=>(fmt(r.w)+' x '+fmt(r.h)).length),13);
+  const tw=Math.max(...R.map(r=>r.tip.length),10);
+  const L=[`PORUDŽBINA STAKLA br. ${O.no}`,`Datum: ${dateSr(today)}`];
+  if(h.kupac)L.push(`Naručilac: ${h.kupac}`);
+  if(h.dob)L.push(`Dobavljač: ${h.dob}`);
+  if(h.rok){const d=new Date(h.rok+'T00:00'); if(!isNaN(d))L.push(`Rok isporuke: ${dateSr(d)}`);}
+  L.push('Mere su u mm, širina x visina.','');
+  const hd=`Rb  ${'Š x V (mm)'.padEnd(pw)}  Kom  ${'Tip stakla'.padEnd(tw)}  m²     Pozicija`;
+  L.push(hd,'-'.repeat(hd.length+10));
+  R.forEach((r,i)=>L.push(`${String(i+1).padEnd(3)} ${(fmt(r.w)+' x '+fmt(r.h)).padEnd(pw)}  ${String(r.kom).padStart(3)}  ${r.tip.padEnd(tw)}  ${fmt2(r.w*r.h*r.kom/1e6).padStart(5)}  ${r.poz}`));
+  L.push('-'.repeat(hd.length+10),`Ukupno: ${totK} kom, ${fmt2(totM)} m²`);
+  if(h.nap)L.push('',`Napomena: ${h.nap}`);
+  return L.join('\n');
+}
+function orderSummary(){
+  const has=O.items.length>0;
+  $('orderBar').hidden=!has; $('orderOut').hidden=!has;
+  $('orderNo').textContent=`br. ${O.no} · ${dateSr(today)}`;
+  if(!has)return;
+  const totK=O.items.reduce((a,i)=>a+i.kom,0), totM=O.items.reduce((a,i)=>a+i.w*i.h*i.kom,0)/1e6;
+  $('orderTot').textContent=`${O.items.length} stavki · ${totK} kom · ${fmt2(totM)} m²`;
+  $('orderPre').textContent=orderText();
+}
+function renderOrder(){
+  if(!O.items.length){$('orderList').innerHTML=`<div class="empty">Porudžbina je prazna. Izračunajte poziciju i kliknite „Dodaj u porudžbinu“ kod stakala. Ponovite za svaku poziciju.</div>`;}
+  else $('orderList').innerHTML=`<div class="tbl"><table><thead><tr><th>Pozicija</th><th>Polje</th><th class="n">Širina</th><th class="n">Visina</th><th class="n">Kom</th><th>Tip stakla</th><th></th></tr></thead><tbody>`+
+    O.items.map(i=>`<tr><td>${esc(i.oz)}</td><td>${esc(i.polje)}</td><td class="n len">${fmt(i.w)}</td><td class="n len">${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td><td>${esc(i.tip)}</td><td class="n"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td></tr>`).join('')+`</tbody></table></div>`;
+  orderSummary();
+}
+$('orderList').addEventListener('input',e=>{const id=e.target.dataset.id; if(!id)return; const it=O.items.find(i=>i.id===id); const v=Math.round(parseFloat(e.target.value)); if(it&&v>0){it.kom=v;saveO();orderSummary();}});
+$('orderList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.del; if(!id)return; O.items=O.items.filter(i=>i.id!==id);saveO();renderOrder();});
+$('addOrder').addEventListener('click',()=>{
+  if(!last||last.errs.length)return;
+  const oz=$('OZ').value.trim()||`P${O.seq}`, tip=$('GT').value.trim()||'—';
+  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),oz,polje:g.name,w:Math.round(g.w*10)/10,h:Math.round(g.h*10)/10,kom:g.kom,tip}));
+  O.seq++;
+  const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
+  saveO(); renderOrder();
+  const t=$('toastAdd'); t.textContent=`Dodato: ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'} (${oz})`; setTimeout(()=>t.textContent='',2500);
+});
+function copyTxt(txt,toastId,okMsg){
+  const t=$(toastId), done=m=>{t.textContent=m;setTimeout(()=>t.textContent='',2500);};
+  const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();done(ok?okMsg:'Kopiranje nije uspelo, označite tekst ručno');};
+  try{navigator.clipboard.writeText(txt).then(()=>done(okMsg),fb);}catch(e){fb();}
+}
+$('copyOrder').addEventListener('click',()=>copyTxt(orderText(),'toastOrder','Kopirano, nalepite u mejl ili Viber'));
+$('copyOrderX').addEventListener('click',()=>{
+  const R=rows(), h=O.head;
+  const L=[`Porudžbina stakla\t${O.no}`,`Datum\t${dateSr(today)}`,`Naručilac\t${h.kupac}`,`Dobavljač\t${h.dob}`,'','Rb\tŠirina mm\tVisina mm\tKom\tTip stakla\tm²\tPozicija',
+    ...R.map((r,i)=>`${i+1}\t${fmt(r.w)}\t${fmt(r.h)}\t${r.kom}\t${r.tip}\t${fmt2(r.w*r.h*r.kom/1e6)}\t${r.poz}`)];
+  if(h.nap)L.push('',`Napomena\t${h.nap}`);
+  copyTxt(L.join('\n'),'toastOrder','Kopirano, nalepite u Excel');
+});
+let armT=null;
+$('clearOrder').addEventListener('click',()=>{
+  const b=$('clearOrder');
+  if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Kliknite ponovo za brisanje';armT=setTimeout(()=>{b.classList.remove('arm');b.textContent='Obriši porudžbinu';},3500);return;}
+  clearTimeout(armT);b.classList.remove('arm');b.textContent='Obriši porudžbinu';
+  O.items=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();
+});
+
+render();
+renderOrder();
+})();
+</script>
+
+</body>
+</html>
