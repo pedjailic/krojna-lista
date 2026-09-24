@@ -128,7 +128,10 @@ textarea{resize:vertical;min-height:60px}
 input[type=text]:focus-visible,input[type=date]:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ohead{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .ohead .wide{grid-column:1/-1}
-.qty{width:74px!important;font-size:16px!important;padding:5px 6px!important;text-align:right}
+.otbl td,.otbl th{padding:8px 6px}
+.otbl td.xc{padding:4px 0;width:1%}
+.otbl .x{font-size:22px;padding:8px 6px}
+.qty{width:52px!important;font-size:16px!important;padding:5px 6px!important;text-align:right}
 .x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:4px}
 .x:hover{color:var(--err);background:var(--err-soft)}
 .x:focus-visible{outline:2px solid var(--accent)}
@@ -137,7 +140,7 @@ input[type=text]:focus-visible,input[type=date]:focus-visible,textarea:focus-vis
 .obar .tot{font:500 14px var(--mono)}
 .chk{display:flex;gap:8px;align-items:center;font-weight:500;font-size:14px;cursor:pointer}
 .chk input{width:18px;height:18px;accent-color:var(--accent)}
-pre.preview{background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:14px;font:13px/1.55 var(--mono);white-space:pre;overflow-x:auto;margin:0 0 12px;color:var(--ink)}
+pre.preview{background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:14px;font:14px/1.5 var(--body);white-space:pre-wrap;overflow-x:auto;margin:0 0 12px;color:var(--ink)}
 .acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .btn.danger{color:var(--err)}
 .btn.danger.arm{background:var(--err);color:#fff;border-color:var(--err)}
@@ -148,6 +151,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
 @media (max-width:880px){
   .wrap{padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
   .mbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:10;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--rule)}
+  .card{padding:14px}
   .mbar .btn{min-height:50px;font-size:15px;padding:8px}
   .mbar .toast{position:absolute;left:16px;right:16px;bottom:100%;margin-bottom:8px;padding:8px 10px;border-radius:6px;text-align:center;background:var(--ink);color:var(--surface)}
   .mbar .toast:empty{display:none}
@@ -525,28 +529,27 @@ const saveO=()=>{try{localStorage.setItem('kl.order',JSON.stringify(O));}catch(e
 $('o-merge').checked=!!O.merge;
 $('o-merge').addEventListener('change',()=>{O.merge=$('o-merge').checked;saveO();orderSummary();});
 
+const short=p=>p.toLowerCase().replace(/\s*\(.*\)/,'').replace(/^krilo /,'k').replace(/^fiks /,'f');
 function rows(){
-  if(!O.merge) return O.items.map(i=>({w:i.w,h:i.h,kom:i.kom,tip:i.tip,poz:`${i.oz} · ${i.tp||''} · ${i.polje.toLowerCase()}`,tp:i.tp||''}));
+  if(!O.merge) return O.items.map(i=>({w:i.w,h:i.h,kom:i.kom,tip:i.tip,poz:`${i.oz} · ${i.tp||''} · ${i.polje.toLowerCase()}`,kr:`${i.oz} ${short(i.polje)}`,tp:i.tp||''}));
   const m=new Map();
   O.items.forEach(i=>{const k=`${i.w}|${i.h}|${i.tip}`; const r=m.get(k); const p=`${i.oz} · ${i.tp||''} · ${i.polje.toLowerCase()}`;
-    if(r){r.kom+=i.kom; if(!r.pozs.includes(p))r.pozs.push(p);} else m.set(k,{w:i.w,h:i.h,kom:i.kom,tip:i.tip,pozs:[p]});});
-  return [...m.values()].sort((a,b)=>a.tip.localeCompare(b.tip)||b.w*b.h-a.w*a.h).map(r=>({w:r.w,h:r.h,kom:r.kom,tip:r.tip,poz:r.pozs.join('; ')}));
+    if(r){r.kom+=i.kom; if(!r.pozs.includes(p))r.pozs.push(p); if(!r.ozs.includes(i.oz))r.ozs.push(i.oz);} else m.set(k,{w:i.w,h:i.h,kom:i.kom,tip:i.tip,pozs:[p],ozs:[i.oz]});});
+  return [...m.values()].sort((a,b)=>a.tip.localeCompare(b.tip)||b.w*b.h-a.w*a.h).map(r=>({w:r.w,h:r.h,kom:r.kom,tip:r.tip,poz:r.pozs.join('; '),kr:r.ozs.join(', ')}));
 }
+// kratke linije, grupisano po tipu stakla; *...* je bold u Viberu
 function orderText(){
   const R=rows(), h=O.head;
   const totK=R.reduce((a,r)=>a+r.kom,0), totM=R.reduce((a,r)=>a+r.w*r.h*r.kom,0)/1e6;
-  const pw=Math.max(...R.map(r=>(fmt(r.w)+' x '+fmt(r.h)).length),13);
-  const tw=Math.max(...R.map(r=>r.tip.length),10);
-  const L=[`PORUDŽBINA STAKLA br. ${O.no}`,`Datum: ${dateSr(today)}`];
-  if(h.kupac)L.push(`Proizvođač: ${h.kupac}`);
-  if(h.dob)L.push(`Dobavljač: ${h.dob}`);
-  if(h.rok){const d=new Date(h.rok+'T00:00'); if(!isNaN(d))L.push(`Rok isporuke: ${dateSr(d)}`);}
-  L.push('Mere su u mm, širina x visina.','');
-  const hd=`Rb  ${'Š x V (mm)'.padEnd(pw)}  Kom  ${'Tip stakla'.padEnd(tw)}  m²     Pozicija`;
-  L.push(hd,'-'.repeat(hd.length+10));
-  R.forEach((r,i)=>L.push(`${String(i+1).padEnd(3)} ${(fmt(r.w)+' x '+fmt(r.h)).padEnd(pw)}  ${String(r.kom).padStart(3)}  ${r.tip.padEnd(tw)}  ${fmt2(r.w*r.h*r.kom/1e6).padStart(5)}  ${r.poz}`));
-  L.push('-'.repeat(hd.length+10),`Ukupno: ${totK} kom, ${fmt2(totM)} m²`);
-  if(h.nap)L.push('',`Napomena: ${h.nap}`);
+  const L=[`*Staklo, porudžbina ${O.no}*`,[dateSr(today),h.kupac].filter(Boolean).join(' · ')];
+  if(h.dob)L.push(`Za: ${h.dob}`);
+  if(h.rok){const d=new Date(h.rok+'T00:00'); if(!isNaN(d))L.push(`Rok: ${dateSr(d)}`);}
+  L.push('Mere u mm, š x v');
+  const G=new Map(); R.forEach(r=>{if(!G.has(r.tip))G.set(r.tip,[]); G.get(r.tip).push(r);});
+  let n=0;
+  G.forEach((rs,tip)=>{L.push('',`*${tip}*`); rs.forEach(r=>L.push(`${++n}. ${fmt(r.w)} x ${fmt(r.h)} · ${r.kom} kom · ${r.kr}`));});
+  L.push('',`*Ukupno: ${totK} kom · ${fmt2(totM)} m²*`);
+  if(h.nap)L.push(`Napomena: ${h.nap}`);
   return L.join('\n');
 }
 function orderSummary(){
@@ -561,8 +564,8 @@ function orderSummary(){
 }
 function renderOrder(){
   if(!O.items.length){$('orderList').innerHTML=`<div class="empty">Porudžbina je prazna. Izračunajte poziciju i kliknite „Dodaj u porudžbinu“ kod stakala. Ponovite za svaku poziciju.</div>`;}
-  else $('orderList').innerHTML=`<div class="tbl"><table><thead><tr><th>Pozicija</th><th>Tip pozicije</th><th>Polje</th><th class="n">Širina</th><th class="n">Visina</th><th class="n">Kom</th><th>Tip stakla</th><th></th></tr></thead><tbody>`+
-    O.items.map(i=>`<tr><td>${esc(i.oz)}</td><td>${esc(i.tp||'')}</td><td>${esc(i.polje)}</td><td class="n len">${fmt(i.w)}</td><td class="n len">${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td><td>${esc(i.tip)}</td><td class="n"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td></tr>`).join('')+`</tbody></table></div>`;
+  else $('orderList').innerHTML=`<div class="tbl"><table class="otbl"><thead><tr><th></th><th>Pozicija</th><th class="n">Š × V</th><th class="n">Kom</th></tr></thead><tbody>`+
+    O.items.map(i=>`<tr><td class="xc"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td><td>${esc(i.oz)} · ${esc(i.polje)}<div class="u">${esc([i.tp,i.tip].filter(Boolean).join(' · '))}</div></td><td class="n len">${fmt(i.w)} × ${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td></tr>`).join('')+`</tbody></table></div>`;
   orderSummary();
 }
 $('orderList').addEventListener('input',e=>{const id=e.target.dataset.id; if(!id)return; const it=O.items.find(i=>i.id===id); const v=Math.round(parseFloat(e.target.value)); if(it&&v>0){it.kom=v;saveO();orderSummary();}});
