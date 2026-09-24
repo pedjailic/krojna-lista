@@ -44,6 +44,7 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
 .eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
 h1{font:700 clamp(30px,5vw,44px)/1 var(--display);letter-spacing:.01em;margin:0 0 10px;text-wrap:balance}
 .lede{margin:0;color:var(--muted);max-width:62ch}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
 .top{margin-bottom:24px}
 .grid{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
@@ -179,6 +180,13 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
     <p class="eyebrow">PVC · ALU stolarija</p>
     <h1>Krojna lista stolarije</h1>
     <p class="lede">Unesite zidarski otvor. Dobijate mere štoka i krila, krojnu listu profila sa uglovima sečenja, dimenzije stakla i raspored sečenja šipki.</p>
+    <div class="tools noprint">
+      <button type="button" class="btn" id="saveJ">Sačuvaj</button>
+      <button type="button" class="btn" id="loadJ">Učitaj</button>
+      <button type="button" class="btn danger" id="newJ">Nova</button>
+      <input type="file" id="fileJ" accept=".json,.txt,application/json,text/plain" hidden>
+      <span class="toast" id="toastTop" aria-live="polite"></span>
+    </div>
   </header>
 
   <div class="grid">
@@ -552,8 +560,10 @@ if(!O.head.kupac)O.head.kupac='Zoran';
 function newNo(){return `${today.getFullYear()}${pad2(today.getMonth()+1)}${pad2(today.getDate())}-${pad2(Math.floor(Math.random()*90)+10)}`;}
 if(!O.no)O.no=newNo();
 const saveO=()=>{try{localStorage.setItem('kl.order',JSON.stringify(O));}catch(e){}};
-[['o-kupac','kupac'],['o-dob','dob'],['o-rok','rok'],['o-nap','nap']].forEach(([id,k])=>{
-  $(id).value=O.head[k]||'';
+const HEAD=[['o-kupac','kupac'],['o-dob','dob'],['o-rok','rok'],['o-nap','nap']];
+const fillHead=()=>HEAD.forEach(([id,k])=>{$(id).value=O.head[k]||'';});
+fillHead();
+HEAD.forEach(([id,k])=>{
   $(id).addEventListener('input',()=>{O.head[k]=$(id).value;saveO();orderSummary();});
 });
 $('o-merge').checked=!!O.merge;
@@ -656,13 +666,70 @@ $('copyOrderX').addEventListener('click',()=>{
   if(h.nap)L.push('',`Napomena\t${h.nap}`);
   copyTxt(L.join('\n'),'toastOrder','Kopirano, nalepite u Excel');
 });
-let armT=null;
-$('clearOrder').addEventListener('click',()=>{
-  const b=$('clearOrder');
-  if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Kliknite ponovo za brisanje';armT=setTimeout(()=>{b.classList.remove('arm');b.textContent='Obriši porudžbinu';},3500);return;}
-  clearTimeout(armT);b.classList.remove('arm');b.textContent='Obriši porudžbinu';
-  O.items=[];O.pos=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();
+function armClick(b,label,fn){
+  let t=null;
+  b.addEventListener('click',()=>{
+    if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Kliknite ponovo za brisanje';t=setTimeout(()=>{b.classList.remove('arm');b.textContent=label;},3500);return;}
+    clearTimeout(t);b.classList.remove('arm');b.textContent=label;fn();
+  });
+}
+function clearAll(){O.items=[];O.pos=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();}
+const flash=(id,m)=>{const t=$(id);t.textContent=m;setTimeout(()=>t.textContent='',3000);};
+armClick($('clearOrder'),'Obriši porudžbinu',clearAll);
+armClick($('newJ'),'Nova',()=>{clearAll();flash('toastTop','Nova porudžbina');});
+
+// ---------- čuvanje / učitavanje (JSON fajl) ----------
+$('saveJ').addEventListener('click',async()=>{
+  const data=JSON.stringify({app:'krojna-lista',v:1,saved:new Date().toISOString(),order:O,params:P});
+  const base=`krojna-lista-${O.no}`;
+  const download=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=`${base}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash('toastTop',`Preuzeto: ${base}.json`);};
+  if(!matchMedia('(pointer:coarse)').matches||!navigator.canShare)return download();
+  // Chrome na Androidu ne deli .json fajlove → isti JSON kao .txt
+  const f=[new File([data],`${base}.json`,{type:'application/json'}),new File([data],`${base}.txt`,{type:'text/plain'})].find(x=>navigator.canShare({files:[x]}));
+  if(!f)return download();
+  try{await navigator.share({files:[f],title:base});flash('toastTop','Sačuvano');}catch(e){if(e.name!=='AbortError')download();}
 });
+$('loadJ').addEventListener('click',()=>$('fileJ').click());
+$('fileJ').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f)return;
+  if(O.items.length&&!confirm('Zameniti trenutnu porudžbinu onom iz fajla?'))return;
+  try{importData(JSON.parse(await f.text()));flash('toastTop',`Učitano: ${O.pos.length} poz., ${O.items.length} stakala`);}
+  catch(err){flash('toastTop','Fajl nije ispravan');}
+});
+// fajl dolazi spolja: svaka vrednost se proverava pre upisa, crtež samo sa dozvoljenim SVG elementima
+const n0=v=>{v=Number(v);return isFinite(v)?v:0;};
+const str=v=>typeof v==='string'?v.slice(0,200):'';
+const sid=v=>typeof v==='string'&&/^[a-z0-9]{1,12}$/.test(v)?v:'';
+const rid=()=>Math.random().toString(36).slice(2,9);
+const arr=v=>Array.isArray(v)?v:[];
+const SVG_TAGS=new Set(['svg','rect','line','path','text']), SVG_ATTR=/^(class|x|y|x1|y1|x2|y2|width|height|d|viewBox|role|aria-label|font-size|text-anchor|transform)$/;
+function safeSvg(s){
+  if(typeof s!=='string'||s.length>100000)return '';
+  const root=new DOMParser().parseFromString(s,'image/svg+xml').documentElement;
+  const ok=el=>SVG_TAGS.has(el.nodeName)&&[...el.attributes].every(a=>SVG_ATTR.test(a.name))&&[...el.childNodes].every(n=>n.nodeType===3||(n.nodeType===1&&ok(n)));
+  if(root.nodeName!=='svg'||!ok(root))return '';
+  const ser=el=>`<${el.nodeName}${[...el.attributes].map(a=>` ${a.name}="${esc(a.value)}"`).join('')}>${[...el.childNodes].map(n=>n.nodeType===1?ser(n):esc(n.nodeValue)).join('')}</${el.nodeName}>`;
+  return ser(root);
+}
+function importData(d){
+  const o=d&&d.order; if(!o||!Array.isArray(o.items))throw new Error('format');
+  const h=o.head||{};
+  O={no:str(o.no).replace(/[^\w-]/g,'')||newNo(),merge:o.merge!==false,seq:Math.max(1,Math.round(n0(o.seq))),
+    head:{kupac:str(h.kupac)||'Zoran',dob:str(h.dob),rok:/^\d{4}-\d\d-\d\d$/.test(h.rok)?h.rok:'',nap:str(h.nap)},
+    items:o.items.map(i=>({id:sid(i.id)||rid(),pid:sid(i.pid),oz:str(i.oz),tp:str(i.tp),polje:str(i.polje),w:n0(i.w),h:n0(i.h),kom:Math.max(1,Math.round(n0(i.kom))),tip:str(i.tip)})),
+    pos:arr(o.pos).map(p=>({id:sid(p.id)||rid(),oz:str(p.oz),tp:str(p.tp),W:n0(p.W),H:n0(p.H),Q:Math.max(1,Math.round(n0(p.Q))),gt:str(p.gt),svg:safeSvg(p.svg),
+      cuts:arr(p.cuts).map(c=>({profil:str(c.profil),el:str(c.el),len:n0(c.len),kom:Math.round(n0(c.kom)),ugao:str(c.ugao)})),
+      glass:arr(p.glass).map(g=>({name:str(g.name),w:n0(g.w),h:n0(g.h),kom:Math.round(n0(g.kom))}))}))};
+  if(d.params&&typeof d.params==='object'){
+    for(const k in DEF){if(typeof d.params[k]==='number'&&isFinite(d.params[k]))P[k]=d.params[k];}
+    for(const k in P)$('p-'+k).value=P[k];
+    try{localStorage.setItem('kl.params',JSON.stringify(P));}catch(e){}
+  }
+  saveO(); fillHead(); $('o-merge').checked=O.merge;
+  const lp=O.pos[O.pos.length-1], m=lp&&lp.oz.match(/^(.*?)(\d+)$/);
+  $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):'P1';
+  render(); renderOrder();
+}
 
 render();
 renderOrder();
