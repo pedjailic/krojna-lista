@@ -15,14 +15,14 @@ Radi u pregledaču, bez instalacije i bez servera. Samo otvorite `index.html`.
 
 1. Upišite oznaku pozicije (npr. P1) i tip stakla (npr. 4-16-4 Low-E, Ar).
 2. Izračunajte poziciju i kliknite **Dodaj u porudžbinu**. Oznaka se sama poveća na P2.
-3. Ponovite za sve pozicije. Unesite naručioca, dobavljača, rok i napomenu.
+3. Ponovite za sve pozicije. Unesite proizvođača (podrazumevano: Zoran), dobavljača, rok i napomenu.
 4. Kliknite **Kopiraj porudžbinu** i nalepite tekst u mejl ili Viber, ili **Kopiraj za Excel**.
 
 Porudžbina se čuva u pregledaču na tom uređaju dok je ne obrišete.
 
 ## Tipovi pozicija
 
-Fiksni · Jednokrilni · Dvokrilni sa srednjakom · Krilo + fiks · Krilo – fiks – krilo · Krilo + nadsvetlo
+Fiksni · Jednokrilni · Dvokrilni sa srednjakom · Dvokrilni sa lažnim srednjakom · Krilo + fiks · Krilo – fiks – krilo · Krilo + nadsvetlo
 
 ## Formule
 
@@ -33,6 +33,11 @@ Krilo              = svetlo polja + 2 × preklop krila
 Staklo             = svetlo profila + 2 × (dubina falca − zazor stakla)
 Rez štoka/krila    = mera + 2 × dodatak za varenje
 Srednjak           = svetli otvor + 2 × dodatak po kraju
+
+Lažni srednjak:
+Krilo (svako)      = (svetla širina štoka + 2 × preklop − razmak krila) / 2
+Visina krila       = svetla visina štoka + 2 × preklop
+Lažni srednjak     = svetla visina štoka − odbitak (rez 90°)
 ```
 
 ## Podrazumevani odbici (okvirni, PVC 70 mm, 5 komora)
@@ -44,6 +49,8 @@ Srednjak           = svetli otvor + 2 × dodatak po kraju
 | Krilo, vidna širina | 77 |
 | Preklop krila | 8 |
 | Srednjak (T) | 84 |
+| Lažni srednjak: razmak krila | 6 |
+| Lažni srednjak: kraći od svetlog otvora | 4 |
 | Dodatak za varenje po kraju | 3 |
 | Dubina falca | 20 |
 | Zazor stakla | 5 |

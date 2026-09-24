@@ -196,7 +196,9 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
             <b>Svetli otvor štoka</b> = štok − 2 × štok profil<br>
             <b>Krilo</b> = svetlo polja + 2 × preklop<br>
             <b>Staklo</b> = svetlo profila + 2 × (falc − zazor stakla)<br>
-            <b>Rez štoka/krila</b> = mera + 2 × dodatak za varenje
+            <b>Rez štoka/krila</b> = mera + 2 × dodatak za varenje<br>
+            <b>Lažni srednjak, krilo</b> = (svetlo štoka + 2 × preklop − razmak krila) / 2<br>
+            <b>Lažni srednjak, dužina</b> = svetla visina štoka − odbitak
           </div>
         </details>
       </form>
@@ -232,7 +234,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
       <section class="card" id="order">
         <div class="chead"><h2>Porudžbina stakla</h2><span class="cmeta" id="orderNo"></span></div>
         <div class="ohead">
-          <label for="o-kupac">Naručilac (vaša firma)<input id="o-kupac" type="text" maxlength="80" placeholder="npr. Stolarija Petrović"></label>
+          <label for="o-kupac">Proizvođač (naručilac)<input id="o-kupac" type="text" maxlength="80" placeholder="npr. Zoran"></label>
           <label for="o-dob">Dobavljač stakla<input id="o-dob" type="text" maxlength="80" placeholder="npr. Staklara Jovanović"></label>
           <label for="o-rok">Rok isporuke<input id="o-rok" type="date"></label>
           <label for="o-nap" class="wide">Napomena<textarea id="o-nap" maxlength="400" placeholder="npr. distancer crni, isporuka na adresu radionice"></textarea></label>
@@ -267,10 +269,10 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
 
 <script>
 (function(){
-const DEF={zBok:10,zGore:10,zDole:10,stok:64,krilo:77,preklop:8,srednjak:84,sredDod:3,varenje:3,falc:20,zazorStakla:5,sipka:6500,rez:4,minOstatak:500};
+const DEF={zBok:10,zGore:10,zDole:10,stok:64,krilo:77,preklop:8,srednjak:84,sredDod:3,lsRazmak:6,lsOdb:4,lsSir:64,varenje:3,falc:20,zazorStakla:5,sipka:6500,rez:4,minOstatak:500};
 const META=[
   ['Montaža',[['zBok','Zazor levo/desno, po strani'],['zGore','Zazor gore'],['zDole','Zazor dole']]],
-  ['Profili',[['stok','Štok, vidna širina'],['krilo','Krilo, vidna širina'],['preklop','Preklop krila na štok'],['srednjak','Srednjak (T), širina'],['sredDod','Srednjak, dodatak po kraju'],['varenje','Dodatak za varenje po kraju']]],
+  ['Profili',[['stok','Štok, vidna širina'],['krilo','Krilo, vidna širina'],['preklop','Preklop krila na štok'],['srednjak','Srednjak (T), širina'],['sredDod','Srednjak, dodatak po kraju'],['lsRazmak','Lažni srednjak: razmak između krila'],['lsOdb','Lažni srednjak: kraći od svetlog otvora za'],['lsSir','Lažni srednjak: širina (za crtež)'],['varenje','Dodatak za varenje po kraju']]],
   ['Staklo',[['falc','Dubina falca'],['zazorStakla','Zazor stakla po strani']]],
   ['Sečenje',[['sipka','Dužina šipke'],['rez','Širina reza testere'],['minOstatak','Najmanji upotrebljiv ostatak']]]
 ];
@@ -278,6 +280,7 @@ const TYPES={
   fiks:{name:'Fiksni',split:'v',fields:['F']},
   k1:{name:'Jednokrilni',split:'v',fields:['K']},
   k2:{name:'Dvokrilni sa srednjakom',split:'v',fields:['K','K']},
+  ls:{name:'Dvokrilni, lažni srednjak',split:'ls',fields:['K','K']},
   kf:{name:'Krilo + fiks',split:'v',fields:['K','F'],custom:true},
   k3:{name:'Krilo – fiks – krilo',split:'v',fields:['K','F','K']},
   nad:{name:'Krilo + nadsvetlo',split:'h',fields:['F','K'],custom:true}
@@ -298,9 +301,10 @@ function glyph(t){
   const n=T.fields.length;
   T.fields.forEach((k,i)=>{
     let fx,fy,fw,fh;
-    if(T.split==='v'){fw=w/n;fx=x0+i*fw;fy=y0;fh=h;}else{fh=i===0?h*0.3:h*0.7;fy=i===0?y0:y0+h*0.3;fx=x0;fw=w;}
-    if(i>0){s+=T.split==='v'?`<line x1="${fx}" y1="${y0}" x2="${fx}" y2="${y0+h}"/>`:`<line x1="${x0}" y1="${fy}" x2="${x0+w}" y2="${fy}"/>`;}
-    if(k==='K'){const right=(T.split==='v'&&n>1&&i>=n/2); const hx=right?fx+fw-2:fx+2, tx=right?fx+2:fx+fw-2; s+=`<path d="M${hx} ${fy+2} L${tx} ${fy+fh/2} L${hx} ${fy+fh-2}"/>`;}
+    if(T.split==='v'||T.split==='ls'){fw=w/n;fx=x0+i*fw;fy=y0;fh=h;}else{fh=i===0?h*0.3:h*0.7;fy=i===0?y0:y0+h*0.3;fx=x0;fw=w;}
+    if(i>0&&T.split==='ls'){s+=`<rect x="${fx-1.5}" y="${y0+3}" width="3" height="${h-6}"/>`;}
+    else if(i>0){s+=T.split==='v'?`<line x1="${fx}" y1="${y0}" x2="${fx}" y2="${y0+h}"/>`:`<line x1="${x0}" y1="${fy}" x2="${x0+w}" y2="${fy}"/>`;}
+    if(k==='K'){const right=(T.split!=='h'&&n>1&&i>=n/2); const hx=right?fx+fw-2:fx+2, tx=right?fx+2:fx+fw-2; s+=`<path d="M${hx} ${fy+2} L${tx} ${fy+fh/2} L${hx} ${fy+fh-2}"/>`;}
   });
   return s+'</svg>';
 }
@@ -337,6 +341,14 @@ function compute(){
     else{const fw=(Lw-(n-1)*M)/n; ws=Array(n).fill(fw);}
     let x=P.stok;
     ws.forEach((w,i)=>{fields.push({x,y:P.stok,w,h:Lh,kind:T.fields[i],hinge:(n>1&&i>=n/2)?'R':'L'}); x+=w; if(i<n-1){mullions.push({x,y:P.stok,w:M,h:Lh,dir:'v',len:Lh+2*P.sredDod}); x+=M;}});
+  } else if(T.split==='ls'){
+    // Lažni srednjak: bez fiksnog srednjaka, dva krila preko celog svetlog otvora
+    const Sw=(Lw+2*P.preklop-P.lsRazmak)/2;
+    const sx1=P.stok-P.preklop, sx2=sx1+Sw+P.lsRazmak;
+    fields.push({x:sx1+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:'K',hinge:'L',passive:true});
+    fields.push({x:sx2+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:'K',hinge:'R'});
+    const len=Lh-P.lsOdb;
+    mullions.push({x:P.stok+Lw/2-P.lsSir/2,y:P.stok+P.lsOdb/2,w:P.lsSir,h:len,dir:'ls',len});
   } else {
     const f1=pos-P.stok-M/2, hs=[f1,Lh-M-f1]; let y=P.stok;
     hs.forEach((h,i)=>{fields.push({x:P.stok,y,w:Lw,h,kind:T.fields[i],hinge:'L'}); y+=h; if(i<n-1){mullions.push({x:P.stok,y,w:Lw,h:M,dir:'h',len:Lw+2*P.sredDod}); y+=M;}});
@@ -345,18 +357,18 @@ function compute(){
   const add=(profil,el,len,kom,ugao)=>cuts.push({profil,el,len,kom:kom*Q,ugao});
   add('Štok','Štok, gore i dole',Wf+2*v,2,'45° / 45°');
   add('Štok','Štok, levo i desno',Hf+2*v,2,'45° / 45°');
-  mullions.forEach((m,i)=>add('Srednjak',m.dir==='v'?`Srednjak ${mullions.length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
+  mullions.forEach((m,i)=>m.dir==='ls'?add('Lažni srednjak','Lažni srednjak, na pasivnom krilu',m.len,1,'90° / 90°'):add('Srednjak',m.dir==='v'?`Srednjak ${mullions.length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
   let kc=0,fc=0;
   fields.forEach(f=>{
     if(f.kind==='K'){
-      kc++; const nm=`Krilo ${kc}`;
+      kc++; const nm=`Krilo ${kc}${f.passive?' (pasivno)':(T.split==='ls'?' (aktivno)':'')}`; const nmS=`krilo ${kc}`;
       f.sw=f.w+2*P.preklop; f.sh=f.h+2*P.preklop;
       f.lw=f.sw-2*P.krilo; f.lh=f.sh-2*P.krilo;
       f.name=nm;
       add('Krilo',`${nm}, gore i dole`,f.sw+2*v,2,'45° / 45°');
       add('Krilo',`${nm}, levo i desno`,f.sh+2*v,2,'45° / 45°');
-      add('Lajsna',`Lajsna ${nm.toLowerCase()}, horizontalno`,f.lw,2,'45° / 45°');
-      add('Lajsna',`Lajsna ${nm.toLowerCase()}, vertikalno`,f.lh,2,'45° / 45°');
+      add('Lajsna',`Lajsna ${nmS}, horizontalno`,f.lw,2,'45° / 45°');
+      add('Lajsna',`Lajsna ${nmS}, vertikalno`,f.lh,2,'45° / 45°');
       f.gw=f.lw+2*g; f.gh=f.lh+2*g;
       if(f.lw<=0||f.lh<=0) errs.push(`${nm} je premalo za zadate odbitke.`);
     } else {
@@ -392,7 +404,7 @@ function svg(r){
   o+=`<rect class="op" x="${-P.zBok}" y="${-P.zGore}" width="${W}" height="${H}"/>`;
   o+=`<rect class="pr" x="0" y="0" width="${Wf}" height="${Hf}"/>`;
   o+=`<rect class="pr" x="${P.stok}" y="${P.stok}" width="${r.Lw}" height="${r.Lh}"/>`;
-  mullions.forEach(m=>{o+=`<rect class="pr" x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}"/>`;});
+  mullions.filter(m=>m.dir!=='ls').forEach(m=>{o+=`<rect class="pr" x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}"/>`;});
   fields.forEach(f=>{
     let gx,gy,gw,gh;
     if(f.kind==='K'){
@@ -404,13 +416,14 @@ function svg(r){
       o+=`<rect class="gl" x="${gx}" y="${gy}" width="${gw}" height="${gh}"/>`;
       if(f.kind==='K'){
         const hx=f.hinge==='R'?gx+gw:gx, tx=f.hinge==='R'?gx:gx+gw;
-        o+=`<path class="sym" d="M${hx} ${gy} L${tx} ${gy+gh/2} L${hx} ${gy+gh} M${gx} ${gy+gh} L${gx+gw/2} ${gy} L${gx+gw} ${gy+gh}"/>`;
+        o+=`<path class="sym" d="M${hx} ${gy} L${tx} ${gy+gh/2} L${hx} ${gy+gh}${f.passive?'':` M${gx} ${gy+gh} L${gx+gw/2} ${gy} L${gx+gw} ${gy+gh}`}"/>`;
       } else {
         o+=`<text class="ft" x="${gx+gw/2}" y="${gy+gh/2-fs*0.2}" font-size="${fs*1.3}" text-anchor="middle">F</text>`;
       }
       o+=`<text class="gt" x="${gx+gw/2}" y="${gy+gh/2+fs*1.3}" font-size="${fs*0.72}" text-anchor="middle">${fmt(f.gw)}×${fmt(f.gh)}</text>`;
     }
   });
+  mullions.filter(m=>m.dir==='ls').forEach(m=>{o+=`<rect class="pr" x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}"/>`;});
   const ty=-P.zGore-pad*0.45, lx=-P.zBok-pad*0.45;
   o+=`<line class="dim" x1="${-P.zBok}" y1="${ty}" x2="${-P.zBok+W}" y2="${ty}"/><line class="dim" x1="${-P.zBok}" y1="${ty-fs*0.4}" x2="${-P.zBok}" y2="${ty+fs*0.4}"/><line class="dim" x1="${-P.zBok+W}" y1="${ty-fs*0.4}" x2="${-P.zBok+W}" y2="${ty+fs*0.4}"/>`;
   o+=`<text class="dt" x="${-P.zBok+W/2}" y="${ty-fs*0.45}" font-size="${fs}" text-anchor="middle">${fmt(W)}</text>`;
@@ -482,8 +495,9 @@ $('copy').addEventListener('click',()=>{
 const today=new Date();
 const pad2=n=>String(n).padStart(2,'0');
 const dateSr=d=>`${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}.`;
-let O={no:'',items:[],head:{kupac:'',dob:'',rok:'',nap:''},merge:true,seq:1};
+let O={no:'',items:[],head:{kupac:'Zoran',dob:'',rok:'',nap:''},merge:true,seq:1};
 try{const s=JSON.parse(localStorage.getItem('kl.order')||'null'); if(s&&Array.isArray(s.items)){O=Object.assign(O,s);O.head=Object.assign({kupac:'',dob:'',rok:'',nap:''},s.head||{});}}catch(e){}
+if(!O.head.kupac)O.head.kupac='Zoran';
 function newNo(){return `${today.getFullYear()}${pad2(today.getMonth()+1)}${pad2(today.getDate())}-${pad2(Math.floor(Math.random()*90)+10)}`;}
 if(!O.no)O.no=newNo();
 const saveO=()=>{try{localStorage.setItem('kl.order',JSON.stringify(O));}catch(e){}};
@@ -495,11 +509,11 @@ $('o-merge').checked=!!O.merge;
 $('o-merge').addEventListener('change',()=>{O.merge=$('o-merge').checked;saveO();orderSummary();});
 
 function rows(){
-  if(!O.merge) return O.items.map(i=>({w:i.w,h:i.h,kom:i.kom,tip:i.tip,poz:`${i.oz} ${i.polje.toLowerCase()}`}));
+  if(!O.merge) return O.items.map(i=>({w:i.w,h:i.h,kom:i.kom,tip:i.tip,poz:`${i.oz} · ${i.tp||''} · ${i.polje.toLowerCase()}`,tp:i.tp||''}));
   const m=new Map();
-  O.items.forEach(i=>{const k=`${i.w}|${i.h}|${i.tip}`; const r=m.get(k); const p=`${i.oz} ${i.polje.toLowerCase()}`;
+  O.items.forEach(i=>{const k=`${i.w}|${i.h}|${i.tip}`; const r=m.get(k); const p=`${i.oz} · ${i.tp||''} · ${i.polje.toLowerCase()}`;
     if(r){r.kom+=i.kom; if(!r.pozs.includes(p))r.pozs.push(p);} else m.set(k,{w:i.w,h:i.h,kom:i.kom,tip:i.tip,pozs:[p]});});
-  return [...m.values()].sort((a,b)=>a.tip.localeCompare(b.tip)||b.w*b.h-a.w*a.h).map(r=>({w:r.w,h:r.h,kom:r.kom,tip:r.tip,poz:r.pozs.join(', ')}));
+  return [...m.values()].sort((a,b)=>a.tip.localeCompare(b.tip)||b.w*b.h-a.w*a.h).map(r=>({w:r.w,h:r.h,kom:r.kom,tip:r.tip,poz:r.pozs.join('; ')}));
 }
 function orderText(){
   const R=rows(), h=O.head;
@@ -507,7 +521,7 @@ function orderText(){
   const pw=Math.max(...R.map(r=>(fmt(r.w)+' x '+fmt(r.h)).length),13);
   const tw=Math.max(...R.map(r=>r.tip.length),10);
   const L=[`PORUDŽBINA STAKLA br. ${O.no}`,`Datum: ${dateSr(today)}`];
-  if(h.kupac)L.push(`Naručilac: ${h.kupac}`);
+  if(h.kupac)L.push(`Proizvođač: ${h.kupac}`);
   if(h.dob)L.push(`Dobavljač: ${h.dob}`);
   if(h.rok){const d=new Date(h.rok+'T00:00'); if(!isNaN(d))L.push(`Rok isporuke: ${dateSr(d)}`);}
   L.push('Mere su u mm, širina x visina.','');
@@ -529,8 +543,8 @@ function orderSummary(){
 }
 function renderOrder(){
   if(!O.items.length){$('orderList').innerHTML=`<div class="empty">Porudžbina je prazna. Izračunajte poziciju i kliknite „Dodaj u porudžbinu“ kod stakala. Ponovite za svaku poziciju.</div>`;}
-  else $('orderList').innerHTML=`<div class="tbl"><table><thead><tr><th>Pozicija</th><th>Polje</th><th class="n">Širina</th><th class="n">Visina</th><th class="n">Kom</th><th>Tip stakla</th><th></th></tr></thead><tbody>`+
-    O.items.map(i=>`<tr><td>${esc(i.oz)}</td><td>${esc(i.polje)}</td><td class="n len">${fmt(i.w)}</td><td class="n len">${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td><td>${esc(i.tip)}</td><td class="n"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td></tr>`).join('')+`</tbody></table></div>`;
+  else $('orderList').innerHTML=`<div class="tbl"><table><thead><tr><th>Pozicija</th><th>Tip pozicije</th><th>Polje</th><th class="n">Širina</th><th class="n">Visina</th><th class="n">Kom</th><th>Tip stakla</th><th></th></tr></thead><tbody>`+
+    O.items.map(i=>`<tr><td>${esc(i.oz)}</td><td>${esc(i.tp||'')}</td><td>${esc(i.polje)}</td><td class="n len">${fmt(i.w)}</td><td class="n len">${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td><td>${esc(i.tip)}</td><td class="n"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td></tr>`).join('')+`</tbody></table></div>`;
   orderSummary();
 }
 $('orderList').addEventListener('input',e=>{const id=e.target.dataset.id; if(!id)return; const it=O.items.find(i=>i.id===id); const v=Math.round(parseFloat(e.target.value)); if(it&&v>0){it.kom=v;saveO();orderSummary();}});
@@ -538,7 +552,7 @@ $('orderList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.
 $('addOrder').addEventListener('click',()=>{
   if(!last||last.errs.length)return;
   const oz=$('OZ').value.trim()||`P${O.seq}`, tip=$('GT').value.trim()||'—';
-  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),oz,polje:g.name,w:Math.round(g.w*10)/10,h:Math.round(g.h*10)/10,kom:g.kom,tip}));
+  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),oz,tp:TYPES[type].name,polje:g.name,w:Math.round(g.w*10)/10,h:Math.round(g.h*10)/10,kom:g.kom,tip}));
   O.seq++;
   const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
   saveO(); renderOrder();
@@ -552,7 +566,7 @@ function copyTxt(txt,toastId,okMsg){
 $('copyOrder').addEventListener('click',()=>copyTxt(orderText(),'toastOrder','Kopirano, nalepite u mejl ili Viber'));
 $('copyOrderX').addEventListener('click',()=>{
   const R=rows(), h=O.head;
-  const L=[`Porudžbina stakla\t${O.no}`,`Datum\t${dateSr(today)}`,`Naručilac\t${h.kupac}`,`Dobavljač\t${h.dob}`,'','Rb\tŠirina mm\tVisina mm\tKom\tTip stakla\tm²\tPozicija',
+  const L=[`Porudžbina stakla\t${O.no}`,`Datum\t${dateSr(today)}`,`Proizvođač\t${h.kupac}`,`Dobavljač\t${h.dob}`,'','Rb\tŠirina mm\tVisina mm\tKom\tTip stakla\tm²\tPozicija',
     ...R.map((r,i)=>`${i+1}\t${fmt(r.w)}\t${fmt(r.h)}\t${r.kom}\t${r.tip}\t${fmt2(r.w*r.h*r.kom/1e6)}\t${r.poz}`)];
   if(h.nap)L.push('',`Napomena\t${h.nap}`);
   copyTxt(L.join('\n'),'toastOrder','Kopirano, nalepite u Excel');
