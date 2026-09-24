@@ -70,7 +70,7 @@ summary{cursor:pointer;font:600 13px/1.2 var(--mono);letter-spacing:.08em;text-t
 .pgroup{margin:14px 0 6px;font:500 12px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .params{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
 .params label{font-size:12.5px;font-weight:500}
-.params input{font-size:15px;padding:7px 8px}
+.params input{font-size:16px;padding:7px 8px}
 .btn{font:600 14px var(--body);padding:9px 14px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -123,12 +123,12 @@ tfoot td{font-weight:600;border-top:1px solid var(--rule);border-bottom:0}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
 .toast{font:500 13px var(--mono);color:var(--accent)}
-input[type=text],input[type=date],textarea{width:100%;font:15px var(--body);padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink)}
+input[type=text],input[type=date],textarea{width:100%;font:16px var(--body);padding:9px 10px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink)}
 textarea{resize:vertical;min-height:60px}
 input[type=text]:focus-visible,input[type=date]:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .ohead{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
 .ohead .wide{grid-column:1/-1}
-.qty{width:74px!important;font-size:15px!important;padding:5px 6px!important;text-align:right}
+.qty{width:74px!important;font-size:16px!important;padding:5px 6px!important;text-align:right}
 .x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:4px}
 .x:hover{color:var(--err);background:var(--err-soft)}
 .x:focus-visible{outline:2px solid var(--accent)}
@@ -143,6 +143,15 @@ pre.preview{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
 .btn.danger.arm{background:var(--err);color:#fff;border-color:var(--err)}
 .sub{font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.mbar{display:none}
+@media (max-width:880px){
+  .wrap{padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+  .mbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:10;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--rule)}
+  .mbar .btn{min-height:50px;font-size:15px;padding:8px}
+  .mbar .toast{position:absolute;left:16px;right:16px;bottom:100%;margin-bottom:8px;padding:8px 10px;border-radius:6px;text-align:center;background:var(--ink);color:var(--surface)}
+  .mbar .toast:empty{display:none}
+}
 @media (prefers-reduced-motion:no-preference){.type span,.btn{transition:border-color .15s,background .15s}}
 </style>
 
@@ -208,22 +217,6 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
       <div class="errors" id="errors" hidden></div>
 
       <section class="card">
-        <div class="chead"><h2>Pozicija</h2><span class="cmeta" id="typeName"></span></div>
-        <div class="draw">
-          <div class="svgbox" id="svg"></div>
-          <dl class="facts" id="facts"></dl>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="chead">
-          <h2>Krojna lista profila</h2>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="toast" id="toast" aria-live="polite"></span><button type="button" class="btn primary" id="copy">Kopiraj za Excel</button></div>
-        </div>
-        <div class="tbl"><table id="cuts"></table></div>
-      </section>
-
-      <section class="card">
         <div class="chead">
           <div><h2>Stakla</h2><span class="cmeta" id="glassMeta"></span></div>
           <div class="acts"><span class="toast" id="toastAdd" aria-live="polite"></span><button type="button" class="btn primary" id="addOrder">Dodaj u porudžbinu</button></div>
@@ -257,6 +250,22 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
       </section>
 
       <section class="card">
+        <div class="chead"><h2>Pozicija</h2><span class="cmeta" id="typeName"></span></div>
+        <div class="draw">
+          <div class="svgbox" id="svg"></div>
+          <dl class="facts" id="facts"></dl>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="chead">
+          <h2>Krojna lista profila</h2>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="toast" id="toast" aria-live="polite"></span><button type="button" class="btn primary" id="copy">Kopiraj za Excel</button></div>
+        </div>
+        <div class="tbl"><table id="cuts"></table></div>
+      </section>
+
+      <section class="card">
         <div class="chead"><h2>Sečenje šipki</h2><span class="cmeta" id="optMeta"></span></div>
         <div class="opt" id="opt"></div>
         <div class="legend"><span><i style="background:var(--bar-a)"></i>rez</span><span><i style="background:var(--offcut-ok)"></i>upotrebljiv ostatak</span><span><i style="background:var(--offcut)"></i>otpad</span></div>
@@ -265,6 +274,12 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
   </div>
 
   <footer>Proračun radi u vašem pregledaču i ne šalje podatke nigde. Odbici koje promenite pamte se na ovom uređaju. Prve pozicije posle podešavanja uvek proverite ručno pre sečenja stakla.</footer>
+</div>
+
+<div class="mbar">
+  <span class="toast" id="toastBar" aria-live="polite"></span>
+  <button type="button" class="btn" id="mAdd">1 · Dodaj stakla</button>
+  <button type="button" class="btn primary" id="mCopy" disabled>2 · Kopiraj za Viber</button>
 </div>
 
 <script>
@@ -456,7 +471,7 @@ function render(){
     r.glass.map(g=>`<tr><td>${esc(g.name)}</td><td class="n len">${fmt(g.w)}</td><td class="n len">${fmt(g.h)}</td><td class="n">${g.kom}</td><td class="n">${fmt(Math.round(g.w*g.h*g.kom/1e4)/100)}</td><td>${esc(gt)}</td></tr>`).join('')+
     `</tbody><tfoot><tr><td colspan="3">Ukupno</td><td class="n">${r.glass.reduce((a,g)=>a+g.kom,0)}</td><td class="n">${fmt(Math.round(gArea*100)/100)}</td><td></td></tr></tfoot>`;
   $('glassMeta').textContent=`zazor ${fmt(P.zazorStakla)} mm po strani`;
-  $('addOrder').disabled=r.errs.length>0;
+  $('addOrder').disabled=$('mAdd').disabled=r.errs.length>0;
 
   const groups={}; r.cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);});
   let totalBars=0;
@@ -480,6 +495,8 @@ $('f').addEventListener('input',ev=>{
   render();
 });
 $('f').addEventListener('submit',e=>e.preventDefault());
+// na telefonu kucanje odmah zamenjuje staru meru
+$('f').addEventListener('focusin',e=>{if(e.target.type==='number')setTimeout(()=>e.target.select(),0);});
 $('reset').addEventListener('click',()=>{P=Object.assign({},DEF);for(const k in P)$('p-'+k).value=P[k];try{localStorage.removeItem('kl.params');}catch(e){}render();});
 $('copy').addEventListener('click',()=>{
   if(!last)return;
@@ -536,8 +553,9 @@ function orderSummary(){
   const has=O.items.length>0;
   $('orderBar').hidden=!has; $('orderOut').hidden=!has;
   $('orderNo').textContent=`br. ${O.no} · ${dateSr(today)}`;
-  if(!has)return;
   const totK=O.items.reduce((a,i)=>a+i.kom,0), totM=O.items.reduce((a,i)=>a+i.w*i.h*i.kom,0)/1e6;
+  $('mCopy').disabled=!has; $('mCopy').textContent=has?`2 · Kopiraj za Viber (${totK})`:'2 · Kopiraj za Viber';
+  if(!has)return;
   $('orderTot').textContent=`${O.items.length} stavki · ${totK} kom · ${fmt2(totM)} m²`;
   $('orderPre').textContent=orderText();
 }
@@ -549,21 +567,24 @@ function renderOrder(){
 }
 $('orderList').addEventListener('input',e=>{const id=e.target.dataset.id; if(!id)return; const it=O.items.find(i=>i.id===id); const v=Math.round(parseFloat(e.target.value)); if(it&&v>0){it.kom=v;saveO();orderSummary();}});
 $('orderList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.del; if(!id)return; O.items=O.items.filter(i=>i.id!==id);saveO();renderOrder();});
-$('addOrder').addEventListener('click',()=>{
+function addToOrder(toastId){
   if(!last||last.errs.length)return;
   const oz=$('OZ').value.trim()||`P${O.seq}`, tip=$('GT').value.trim()||'—';
   last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),oz,tp:TYPES[type].name,polje:g.name,w:Math.round(g.w*10)/10,h:Math.round(g.h*10)/10,kom:g.kom,tip}));
   O.seq++;
   const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
   saveO(); renderOrder();
-  const t=$('toastAdd'); t.textContent=`Dodato: ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'} (${oz})`; setTimeout(()=>t.textContent='',2500);
-});
+  const t=$(toastId); t.textContent=`Dodato: ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'} (${oz})`; setTimeout(()=>t.textContent='',2500);
+}
+$('addOrder').addEventListener('click',()=>addToOrder('toastAdd'));
+$('mAdd').addEventListener('click',()=>addToOrder('toastBar'));
 function copyTxt(txt,toastId,okMsg){
   const t=$(toastId), done=m=>{t.textContent=m;setTimeout(()=>t.textContent='',2500);};
   const fb=()=>{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}ta.remove();done(ok?okMsg:'Kopiranje nije uspelo, označite tekst ručno');};
   try{navigator.clipboard.writeText(txt).then(()=>done(okMsg),fb);}catch(e){fb();}
 }
 $('copyOrder').addEventListener('click',()=>copyTxt(orderText(),'toastOrder','Kopirano, nalepite u mejl ili Viber'));
+$('mCopy').addEventListener('click',()=>copyTxt(orderText(),'toastBar','Kopirano. Otvorite Viber i nalepite.'));
 $('copyOrderX').addEventListener('click',()=>{
   const R=rows(), h=O.head;
   const L=[`Porudžbina stakla\t${O.no}`,`Datum\t${dateSr(today)}`,`Proizvođač\t${h.kupac}`,`Dobavljač\t${h.dob}`,'','Rb\tŠirina mm\tVisina mm\tKom\tTip stakla\tm²\tPozicija',
