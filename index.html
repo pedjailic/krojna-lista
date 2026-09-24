@@ -147,6 +147,19 @@ pre.preview{background:var(--bg);border:1px solid var(--rule);border-radius:8px;
 .sub{font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+#review td,#review th{padding:8px 6px}
+.rpos{border-top:1px solid var(--rule);padding-top:14px;margin-top:14px}
+.rpos .chead{margin-bottom:2px}
+.rpos h3{font:600 19px/1.1 var(--display);letter-spacing:.02em;margin:0}
+.rpos .cmeta{margin:0 0 10px}
+.rpos .svgbox svg{max-height:320px}
+@media print{
+  body.rev .wrap>header,body.rev .panel,body.rev .out>section:not(#review),body.rev footer,.mbar,.noprint{display:none!important}
+  body.rev .grid{display:block}
+  body.rev .wrap{padding:0}
+  .card{border:0;padding:0}
+  .rpos{break-inside:avoid}
+}
 .mbar{display:none}
 @media (max-width:880px){
   .wrap{padding:20px 16px calc(96px + env(safe-area-inset-bottom,0px))}
@@ -237,6 +250,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
           <label for="o-nap" class="wide">Napomena<textarea id="o-nap" maxlength="400" placeholder="npr. distancer crni, isporuka na adresu radionice"></textarea></label>
         </div>
         <div id="orderList"></div>
+        <div class="acts" id="revBar" style="margin-top:12px" hidden><button type="button" class="btn primary" id="openRev"></button></div>
         <div class="obar" id="orderBar" hidden>
           <label class="chk" for="o-merge"><input id="o-merge" type="checkbox" checked> Spoji iste dimenzije i tip stakla</label>
           <span class="tot" id="orderTot"></span>
@@ -251,6 +265,17 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
             <span class="toast" id="toastOrder" aria-live="polite"></span>
           </div>
         </div>
+      </section>
+
+      <section class="card" id="review" hidden>
+        <div class="chead"><h2>Pregled svih pozicija</h2><div class="acts noprint"><button type="button" class="btn" id="printRev">Štampaj</button><button type="button" class="btn" id="closeRev">Zatvori</button></div></div>
+        <p class="cmeta" id="revMeta"></p>
+        <div class="sub">Zbirna krojna lista</div>
+        <div class="tbl"><table id="revCuts"></table></div>
+        <div class="sub">Zbirno sečenje šipki</div>
+        <div class="opt" id="revOpt"></div>
+        <div class="sub">Pozicije</div>
+        <div id="revPos"></div>
       </section>
 
       <section class="card">
@@ -282,7 +307,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
 
 <div class="mbar">
   <span class="toast" id="toastBar" aria-live="polite"></span>
-  <button type="button" class="btn" id="mAdd">1 · Dodaj stakla</button>
+  <button type="button" class="btn" id="mAdd">1 · Dodaj poziciju</button>
   <button type="button" class="btn primary" id="mCopy" disabled>2 · Kopiraj za Viber</button>
 </div>
 
@@ -477,17 +502,22 @@ function render(){
   $('glassMeta').textContent=`zazor ${fmt(P.zazorStakla)} mm po strani`;
   $('addOrder').disabled=$('mAdd').disabled=r.errs.length>0;
 
-  const groups={}; r.cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);});
-  let totalBars=0;
-  $('opt').innerHTML=Object.entries(groups).map(([prof,lens])=>{
-    const bars=optimize(lens,P.sipka,P.rez); totalBars+=bars.length;
+  const B=barsHtml(groupCuts(r.cuts),12);
+  $('opt').innerHTML=B.html;
+  $('optMeta').textContent=`ukupno ${B.total} šipki · rez ${fmt(P.rez)} mm`;
+}
+function groupCuts(cuts){const groups={}; cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);}); return groups;}
+function barsHtml(groups,max){
+  let total=0;
+  const html=Object.entries(groups).map(([prof,lens])=>{
+    const bars=optimize(lens,P.sipka,P.rez); total+=bars.length;
     const used=lens.filter(l=>l<=P.sipka).reduce((a,b)=>a+b,0), util=bars.length?used/(bars.length*P.sipka)*100:0;
-    const shown=bars.slice(0,12);
+    const shown=bars.slice(0,max);
     return `<div class="og"><h3>${esc(prof)}</h3><p>${bars.length} ${bars.length===1?'šipka':(bars.length<5?'šipke':'šipki')} × ${fmt(P.sipka)} mm · iskorišćenje ${fmt(Math.round(util))}% · ${lens.length} rezova</p><div class="bars">`+
       shown.map(b=>`<div class="bar">${b.cuts.map(l=>`<span class="seg" style="flex:0 0 ${l/P.sipka*100}%" title="${fmt(l)} mm">${l/P.sipka>0.09?fmt(l):''}</span>`).join('')}${b.rem>0?`<span class="seg off${b.rem>=P.minOstatak?' ok':''}" style="flex:1 1 auto" title="ostatak ${fmt(b.rem)} mm">${b.rem/P.sipka>0.09?fmt(b.rem):''}</span>`:''}</div>`).join('')+
-      (bars.length>12?`<p>i još ${bars.length-12} šipki</p>`:'')+`</div></div>`;
+      (bars.length>max?`<p>i još ${bars.length-max} šipki</p>`:'')+`</div></div>`;
   }).join('');
-  $('optMeta').textContent=`ukupno ${totalBars} šipki · rez ${fmt(P.rez)} mm`;
+  return {html,total};
 }
 
 // events
@@ -516,7 +546,7 @@ $('copy').addEventListener('click',()=>{
 const today=new Date();
 const pad2=n=>String(n).padStart(2,'0');
 const dateSr=d=>`${pad2(d.getDate())}.${pad2(d.getMonth()+1)}.${d.getFullYear()}.`;
-let O={no:'',items:[],head:{kupac:'Zoran',dob:'',rok:'',nap:''},merge:true,seq:1};
+let O={no:'',items:[],pos:[],head:{kupac:'Zoran',dob:'',rok:'',nap:''},merge:true,seq:1};
 try{const s=JSON.parse(localStorage.getItem('kl.order')||'null'); if(s&&Array.isArray(s.items)){O=Object.assign(O,s);O.head=Object.assign({kupac:'',dob:'',rok:'',nap:''},s.head||{});}}catch(e){}
 if(!O.head.kupac)O.head.kupac='Zoran';
 function newNo(){return `${today.getFullYear()}${pad2(today.getMonth()+1)}${pad2(today.getDate())}-${pad2(Math.floor(Math.random()*90)+10)}`;}
@@ -567,17 +597,48 @@ function renderOrder(){
   else $('orderList').innerHTML=`<div class="tbl"><table class="otbl"><thead><tr><th></th><th>Pozicija</th><th class="n">Š × V</th><th class="n">Kom</th></tr></thead><tbody>`+
     O.items.map(i=>`<tr><td class="xc"><button type="button" class="x" data-del="${i.id}" aria-label="Ukloni stavku">×</button></td><td>${esc(i.oz)} · ${esc(i.polje)}<div class="u">${esc([i.tp,i.tip].filter(Boolean).join(' · '))}</div></td><td class="n len">${fmt(i.w)} × ${fmt(i.h)}</td><td class="n"><input class="qty" type="number" min="1" step="1" id="oq-${i.id}" data-id="${i.id}" value="${i.kom}" aria-label="Komada"></td></tr>`).join('')+`</tbody></table></div>`;
   orderSummary();
+  renderReview();
 }
+const ug=u=>{const [a,b]=u.split(' / '); return a===b?a:u;};
+function renderReview(){
+  const n=O.pos.length, rv=$('review');
+  $('revBar').hidden=!n; $('openRev').textContent=`Pregled svih pozicija (${n}) · krojna lista i crteži`;
+  if(!n){rv.hidden=true;document.body.classList.remove('rev');}
+  if(rv.hidden)return;
+  const agg=new Map();
+  O.pos.forEach(p=>p.cuts.forEach(c=>{const k=`${c.profil}|${c.len}|${c.ugao}`, a=agg.get(k);
+    if(a){a.kom+=c.kom; if(!a.oz.includes(p.oz))a.oz.push(p.oz);} else agg.set(k,{profil:c.profil,len:c.len,ugao:c.ugao,kom:c.kom,oz:[p.oz]});}));
+  const A=[...agg.values()].sort((a,b)=>a.profil.localeCompare(b.profil)||b.len-a.len);
+  $('revCuts').innerHTML=`<thead><tr><th>Profil</th><th class="n">Dužina mm</th><th class="n">Kom</th><th class="n">Rez</th></tr></thead><tbody>`+
+    A.map(c=>`<tr><td><span class="tag">${esc(c.profil)}</span><div class="u">${esc(c.oz.join(', '))}</div></td><td class="n len">${fmt(c.len)}</td><td class="n">${c.kom}</td><td class="n">${esc(ug(c.ugao))}</td></tr>`).join('')+'</tbody>';
+  const B=barsHtml(groupCuts(A),Infinity);
+  $('revOpt').innerHTML=B.html;
+  const win=O.pos.reduce((a,p)=>a+p.Q,0), G=O.pos.flatMap(p=>p.glass);
+  $('revMeta').textContent=`${n} poz. · ${win} kom prozora · ${B.total} šipki × ${fmt(P.sipka)} mm · staklo ${G.reduce((a,g)=>a+g.kom,0)} kom, ${fmt2(G.reduce((a,g)=>a+g.w*g.h*g.kom,0)/1e6)} m²`;
+  $('revPos').innerHTML=O.pos.map(p=>`<div class="rpos"><div class="chead"><h3>${esc(p.oz)} · ${esc(p.tp)}</h3><button type="button" class="x noprint" data-pdel="${p.id}" aria-label="Ukloni poziciju">×</button></div>`+
+    `<p class="cmeta">otvor ${fmt(p.W)} × ${fmt(p.H)} · ${p.Q} kom · ${esc(p.gt)}</p><div class="draw"><div class="svgbox">${p.svg}</div>`+
+    `<div class="tbl"><table><thead><tr><th>Element</th><th class="n">mm</th><th class="n">Kom</th><th class="n">Rez</th></tr></thead><tbody>`+
+    p.cuts.map(c=>`<tr><td>${esc(c.el)}</td><td class="n len">${fmt(c.len)}</td><td class="n">${c.kom}</td><td class="n">${esc(ug(c.ugao))}</td></tr>`).join('')+
+    p.glass.map(g=>`<tr><td>Staklo, ${esc(g.name.toLowerCase())}</td><td class="n len">${fmt(g.w)} × ${fmt(g.h)}</td><td class="n">${g.kom}</td><td></td></tr>`).join('')+
+    `</tbody></table></div></div></div>`).join('');
+}
+$('openRev').addEventListener('click',()=>{$('review').hidden=false;document.body.classList.add('rev');renderReview();$('review').scrollIntoView({behavior:'smooth'});});
+$('closeRev').addEventListener('click',()=>{$('review').hidden=true;document.body.classList.remove('rev');$('order').scrollIntoView();});
+$('printRev').addEventListener('click',()=>window.print());
+$('revPos').addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.pdel; if(!id)return; O.pos=O.pos.filter(p=>p.id!==id); O.items=O.items.filter(i=>i.pid!==id); saveO(); renderOrder();});
 $('orderList').addEventListener('input',e=>{const id=e.target.dataset.id; if(!id)return; const it=O.items.find(i=>i.id===id); const v=Math.round(parseFloat(e.target.value)); if(it&&v>0){it.kom=v;saveO();orderSummary();}});
 $('orderList').addEventListener('click',e=>{const id=e.target.dataset&&e.target.dataset.del; if(!id)return; O.items=O.items.filter(i=>i.id!==id);saveO();renderOrder();});
 function addToOrder(toastId){
   if(!last||last.errs.length)return;
   const oz=$('OZ').value.trim()||`P${O.seq}`, tip=$('GT').value.trim()||'—';
-  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),oz,tp:TYPES[type].name,polje:g.name,w:Math.round(g.w*10)/10,h:Math.round(g.h*10)/10,kom:g.kom,tip}));
+  const pid=Math.random().toString(36).slice(2,9), r1=v=>Math.round(v*10)/10;
+  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),pid,oz,tp:TYPES[type].name,polje:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom,tip}));
+  O.pos.push({id:pid,oz,tp:TYPES[type].name,W:last.W,H:last.H,Q:last.Q,gt:tip,svg:$('svg').innerHTML,
+    cuts:last.cuts.map(c=>({profil:c.profil,el:c.el,len:r1(c.len),kom:c.kom,ugao:c.ugao})),glass:last.glass.map(g=>({name:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom}))});
   O.seq++;
   const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
   saveO(); renderOrder();
-  const t=$(toastId); t.textContent=`Dodato: ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'} (${oz})`; setTimeout(()=>t.textContent='',2500);
+  const t=$(toastId); t.textContent=`Dodato: ${oz} · ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'}`; setTimeout(()=>t.textContent='',2500);
 }
 $('addOrder').addEventListener('click',()=>addToOrder('toastAdd'));
 $('mAdd').addEventListener('click',()=>addToOrder('toastBar'));
@@ -600,7 +661,7 @@ $('clearOrder').addEventListener('click',()=>{
   const b=$('clearOrder');
   if(!b.classList.contains('arm')){b.classList.add('arm');b.textContent='Kliknite ponovo za brisanje';armT=setTimeout(()=>{b.classList.remove('arm');b.textContent='Obriši porudžbinu';},3500);return;}
   clearTimeout(armT);b.classList.remove('arm');b.textContent='Obriši porudžbinu';
-  O.items=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();
+  O.items=[];O.pos=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();
 });
 
 render();

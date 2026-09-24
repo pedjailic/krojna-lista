@@ -8,6 +8,7 @@ Besplatan kalkulator za PVC i ALU stolariju. Unesete zidarski otvor, a dobijete:
 - raspored sečenja po šipkama (optimizacija, otpad i upotrebljivi ostaci)
 - kopiranje krojne liste u Excel jednim klikom
 - **porudžbinu stakla**: dodajete stakla iz više pozicija u jednu listu, iste dimenzije se spajaju, a gotov tekst porudžbine kopirate u mejl, Viber ili Excel
+- **pregled svih pozicija**: svaka dodata pozicija se pamti sa crtežom i krojnom listom; na kraju unosa dobijate zbirnu krojnu listu, zbirno sečenje šipki i sve pozicije jednu ispod druge, spremno za štampu
 
 Radi u pregledaču, bez instalacije i bez servera. Samo otvorite `index.html`.
 
