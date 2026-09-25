@@ -45,6 +45,12 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
 h1{font:700 clamp(30px,5vw,44px)/1 var(--display);letter-spacing:.01em;margin:0 0 10px;text-wrap:balance}
 .lede{margin:0;color:var(--muted);max-width:62ch}
 .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+dialog.gd{border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink);padding:16px;width:min(420px,calc(100vw - 32px))}
+dialog.gd::backdrop{background:rgba(0,0,0,.4)}
+dialog.gd h2{font:600 20px/1.1 var(--display);margin:0 0 10px}
+.gdlist{display:grid;gap:6px;max-height:60vh;overflow:auto;margin-bottom:12px}
+.gdlist button{text-align:left;display:grid;gap:2px}
+.gdlist .u{font-weight:400}
 .top{margin-bottom:24px}
 .grid{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
@@ -62,6 +68,9 @@ input[type=number]:focus-visible,button:focus-visible,summary:focus-visible,.typ
 .type input{position:absolute;opacity:0;pointer-events:none}
 .type span{display:flex;gap:8px;align-items:center;padding:8px;border:1px solid var(--rule);border-radius:6px;font-size:13px;line-height:1.25;font-weight:500;min-height:52px;background:var(--surface)}
 .type svg{flex:none;width:30px;height:36px}
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.kinds select{width:100%;font:500 16px var(--body);padding:8px 6px;border:1px solid var(--rule);border-radius:6px;background:var(--bg);color:var(--ink)}
+.kinds select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .type svg rect,.type svg line,.type svg path{fill:none;stroke:var(--muted);stroke-width:1.4}
 .type input:checked+span{border-color:var(--accent);background:var(--accent-soft)}
 .type input:checked+span svg rect,.type input:checked+span svg line,.type input:checked+span svg path{stroke:var(--accent)}
@@ -183,6 +192,8 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
     <div class="tools noprint">
       <button type="button" class="btn" id="saveJ">Sačuvaj</button>
       <button type="button" class="btn" id="loadJ">Učitaj</button>
+      <button type="button" class="btn primary" id="gdSave" hidden>Sačuvaj na Drive</button>
+      <button type="button" class="btn" id="gdLoad" hidden>Učitaj sa Drive-a</button>
       <button type="button" class="btn danger" id="newJ">Nova</button>
       <input type="file" id="fileJ" accept=".json,.txt,application/json,text/plain" hidden>
       <span class="toast" id="toastTop" aria-live="polite"></span>
@@ -217,6 +228,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
         <fieldset>
           <legend>Tip pozicije</legend>
           <div class="types" id="types"></div>
+          <div class="kinds" id="kinds"></div>
           <label for="POS" id="posWrap" hidden><span><span id="posLabel">Osa srednjaka od leve ivice štoka</span> <span class="u">mm</span></span><input id="POS" type="number" inputmode="numeric" step="1"></label>
         </fieldset>
 
@@ -313,6 +325,12 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
   <footer>Proračun radi u vašem pregledaču i ne šalje podatke nigde. Odbici koje promenite pamte se na ovom uređaju. Prve pozicije posle podešavanja uvek proverite ručno pre sečenja stakla.</footer>
 </div>
 
+<dialog class="gd" id="gdDlg">
+  <h2>Sačuvano na Google Drive-u</h2>
+  <div class="gdlist" id="gdList"></div>
+  <button type="button" class="btn" id="gdClose">Zatvori</button>
+</dialog>
+
 <div class="mbar">
   <span class="toast" id="toastBar" aria-live="polite"></span>
   <button type="button" class="btn" id="mAdd">1 · Dodaj poziciju</button>
@@ -367,6 +385,20 @@ $('params').innerHTML=META.map(([g,items])=>`<div class="pgroup">${g}</div><div 
 
 function num(id){const v=parseFloat($(id).value);return isFinite(v)?v:0;}
 
+// izbor po polju: K = krilo koje se otvara, FK = fiks krilo (krilo profil, ne otvara se), F = fiks u štoku
+let kinds=null;
+const KN={K:'krilo',FK:'fiks krilo',F:'fiks'};
+function curKinds(){const T=TYPES[type]; if(!kinds||kinds.length!==T.fields.length)kinds=T.fields.slice(); return kinds;}
+function typeLabel(){const T=TYPES[type], k=curKinds(); return k.every((x,i)=>x===T.fields[i])?T.name:`${T.name} (${k.map(x=>KN[x]).join(' + ')})`;}
+function renderKinds(){
+  const T=TYPES[type], k=curKinds(), n=k.length;
+  const names=n===1?['Polje']:T.split==='h'?['Gore','Dole']:n===2?['Levo','Desno']:['Levo','Sredina','Desno'];
+  const opts=T.split==='ls'?['K','FK']:['K','FK','F'];
+  const lbl={K:'Krilo (otvara se)',FK:'Fiks krilo',F:'Fiks u štoku'};
+  $('kinds').innerHTML=k.map((x,i)=>`<label for="kind-${i}">${names[i]}<select id="kind-${i}" data-f="${i}">${opts.map(o=>`<option value="${o}"${o===x?' selected':''}>${lbl[o]}</option>`).join('')}</select></label>`).join('');
+}
+renderKinds();
+
 function defaultPos(Wf,Hf){
   const T=TYPES[type];
   if(T.split==='h') return Math.round(Math.min(500,Hf/3));
@@ -386,24 +418,24 @@ function compute(){
     if(!posTouched||!$('POS').value) $('POS').value=defaultPos(Wf,Hf);
   } else $('posWrap').hidden=true;
   const pos=num('POS');
-  const n=T.fields.length, fields=[], mullions=[];
+  const n=T.fields.length, fields=[], mullions=[], K=curKinds();
   if(T.split==='v'){
     let ws;
     if(T.custom&&n===2){const f1=pos-P.stok-M/2; ws=[f1,Lw-M-f1];}
     else{const fw=(Lw-(n-1)*M)/n; ws=Array(n).fill(fw);}
     let x=P.stok;
-    ws.forEach((w,i)=>{fields.push({x,y:P.stok,w,h:Lh,kind:T.fields[i],hinge:(n>1&&i>=n/2)?'R':'L'}); x+=w; if(i<n-1){mullions.push({x,y:P.stok,w:M,h:Lh,dir:'v',len:Lh+2*P.sredDod}); x+=M;}});
+    ws.forEach((w,i)=>{fields.push({x,y:P.stok,w,h:Lh,kind:K[i],hinge:(n>1&&i>=n/2)?'R':'L'}); x+=w; if(i<n-1){mullions.push({x,y:P.stok,w:M,h:Lh,dir:'v',len:Lh+2*P.sredDod}); x+=M;}});
   } else if(T.split==='ls'){
     // Lažni srednjak: bez fiksnog srednjaka, dva krila preko celog svetlog otvora
     const Sw=(Lw+2*P.preklop-P.lsRazmak)/2;
     const sx1=P.stok-P.preklop, sx2=sx1+Sw+P.lsRazmak;
-    fields.push({x:sx1+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:'K',hinge:'L',passive:true});
-    fields.push({x:sx2+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:'K',hinge:'R'});
+    fields.push({x:sx1+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:K[0],hinge:'L',passive:true});
+    fields.push({x:sx2+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:K[1],hinge:'R'});
     const len=Lh-P.lsOdb;
     mullions.push({x:P.stok+Lw/2-P.lsSir/2,y:P.stok+P.lsOdb/2,w:P.lsSir,h:len,dir:'ls',len});
   } else {
     const f1=pos-P.stok-M/2, hs=[f1,Lh-M-f1]; let y=P.stok;
-    hs.forEach((h,i)=>{fields.push({x:P.stok,y,w:Lw,h,kind:T.fields[i],hinge:'L'}); y+=h; if(i<n-1){mullions.push({x:P.stok,y,w:Lw,h:M,dir:'h',len:Lw+2*P.sredDod}); y+=M;}});
+    hs.forEach((h,i)=>{fields.push({x:P.stok,y,w:Lw,h,kind:K[i],hinge:'L'}); y+=h; if(i<n-1){mullions.push({x:P.stok,y,w:Lw,h:M,dir:'h',len:Lw+2*P.sredDod}); y+=M;}});
   }
   const cuts=[], glass=[];
   const add=(profil,el,len,kom,ugao)=>cuts.push({profil,el,len,kom:kom*Q,ugao});
@@ -412,8 +444,10 @@ function compute(){
   mullions.forEach((m,i)=>m.dir==='ls'?add('Lažni srednjak','Lažni srednjak, na pasivnom krilu',m.len,1,'90° / 90°'):add('Srednjak',m.dir==='v'?`Srednjak ${mullions.length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
   let kc=0,fc=0;
   fields.forEach(f=>{
-    if(f.kind==='K'){
-      kc++; const nm=`Krilo ${kc}${f.passive?' (pasivno)':(T.split==='ls'?' (aktivno)':'')}`; const nmS=`krilo ${kc}`;
+    // fiks krilo (FK) = isti profil, rezovi i staklo kao krilo, samo se ne otvara
+    if(f.kind!=='F'){
+      kc++; const fk=f.kind==='FK';
+      const nm=fk?`Fiks krilo ${kc}`:`Krilo ${kc}${f.passive?' (pasivno)':(T.split==='ls'?' (aktivno)':'')}`, nmS=`${fk?'fiks krilo':'krilo'} ${kc}`;
       f.sw=f.w+2*P.preklop; f.sh=f.h+2*P.preklop;
       f.lw=f.sw-2*P.krilo; f.lh=f.sh-2*P.krilo;
       f.name=nm;
@@ -459,7 +493,7 @@ function svg(r){
   mullions.filter(m=>m.dir!=='ls').forEach(m=>{o+=`<rect class="pr" x="${m.x}" y="${m.y}" width="${m.w}" height="${m.h}"/>`;});
   fields.forEach(f=>{
     let gx,gy,gw,gh;
-    if(f.kind==='K'){
+    if(f.kind!=='F'){
       const sx=f.x-P.preklop, sy=f.y-P.preklop;
       o+=`<rect class="pr" x="${sx}" y="${sy}" width="${f.sw}" height="${f.sh}"/>`;
       gx=sx+P.krilo; gy=sy+P.krilo; gw=f.lw; gh=f.lh;
@@ -470,7 +504,7 @@ function svg(r){
         const hx=f.hinge==='R'?gx+gw:gx, tx=f.hinge==='R'?gx:gx+gw;
         o+=`<path class="sym" d="M${hx} ${gy} L${tx} ${gy+gh/2} L${hx} ${gy+gh}${f.passive?'':` M${gx} ${gy+gh} L${gx+gw/2} ${gy} L${gx+gw} ${gy+gh}`}"/>`;
       } else {
-        o+=`<text class="ft" x="${gx+gw/2}" y="${gy+gh/2-fs*0.2}" font-size="${fs*1.3}" text-anchor="middle">F</text>`;
+        o+=`<text class="ft" x="${gx+gw/2}" y="${gy+gh/2-fs*0.2}" font-size="${fs*1.3}" text-anchor="middle">${f.kind==='FK'?'FK':'F'}</text>`;
       }
       o+=`<text class="gt" x="${gx+gw/2}" y="${gy+gh/2+fs*1.3}" font-size="${fs*0.72}" text-anchor="middle">${fmt(f.gw)}×${fmt(f.gh)}</text>`;
     }
@@ -488,10 +522,10 @@ let last=null;
 function render(){
   const r=compute(); last=r;
   const e=$('errors'); if(r.errs.length){e.hidden=false;e.innerHTML=r.errs.map(x=>`<p>${esc(x)}</p>`).join('');} else e.hidden=true;
-  $('typeName').textContent=`${TYPES[type].name}${r.Q>1?' · '+r.Q+' kom':''}`;
+  $('typeName').textContent=`${typeLabel()}${r.Q>1?' · '+r.Q+' kom':''}`;
   $('svg').innerHTML=svg(r);
   const gArea=r.glass.reduce((a,g)=>a+g.w*g.h*g.kom,0)/1e6;
-  const sashTxt=r.fields.filter(f=>f.kind==='K').map(f=>`${fmt(f.sw)} × ${fmt(f.sh)}`);
+  const sashTxt=r.fields.filter(f=>f.kind!=='F').map(f=>`${fmt(f.sw)} × ${fmt(f.sh)}`);
   $('facts').innerHTML=[
     ['Zidarski otvor',`${fmt(r.W)} × ${fmt(r.H)}`],
     ['Spoljna mera štoka',`${fmt(r.Wf)} × ${fmt(r.Hf)}`],
@@ -531,7 +565,8 @@ function barsHtml(groups,max){
 // events
 $('f').addEventListener('input',ev=>{
   const t=ev.target;
-  if(t.name==='tip'){type=t.value;posTouched=false;$('POS').value='';try{localStorage.setItem('kl.type',type);}catch(e){}}
+  if(t.name==='tip'){type=t.value;posTouched=false;$('POS').value='';kinds=null;renderKinds();try{localStorage.setItem('kl.type',type);}catch(e){}}
+  if(t.dataset&&t.dataset.f!==undefined)curKinds()[+t.dataset.f]=t.value;
   if(t.id==='POS')posTouched=true;
   if(t.dataset&&t.dataset.k){const v=parseFloat(t.value); if(isFinite(v)){P[t.dataset.k]=v;try{localStorage.setItem('kl.params',JSON.stringify(P));}catch(e){}}}
   render();
@@ -542,7 +577,7 @@ $('f').addEventListener('focusin',e=>{if(e.target.type==='number')setTimeout(()=
 $('reset').addEventListener('click',()=>{P=Object.assign({},DEF);for(const k in P)$('p-'+k).value=P[k];try{localStorage.removeItem('kl.params');}catch(e){}render();});
 $('copy').addEventListener('click',()=>{
   if(!last)return;
-  const lines=[`Pozicija\t${TYPES[type].name}`,`Otvor\t${fmt(last.W)} x ${fmt(last.H)}`,`Štok\t${fmt(last.Wf)} x ${fmt(last.Hf)}`,`Komada\t${last.Q}`,'','Profil\tElement\tDužina mm\tKom\tRez',
+  const lines=[`Pozicija\t${typeLabel()}`,`Otvor\t${fmt(last.W)} x ${fmt(last.H)}`,`Štok\t${fmt(last.Wf)} x ${fmt(last.Hf)}`,`Komada\t${last.Q}`,'','Profil\tElement\tDužina mm\tKom\tRez',
     ...last.cuts.map(c=>`${c.profil}\t${c.el}\t${fmt(c.len)}\t${c.kom}\t${c.ugao}`),'','Staklo\tŠirina mm\tVisina mm\tKom',
     ...last.glass.map(g=>`${g.name}\t${fmt(g.w)}\t${fmt(g.h)}\t${g.kom}`)];
   const txt=lines.join('\n'), toast=$('toast');
@@ -642,8 +677,8 @@ function addToOrder(toastId){
   if(!last||last.errs.length)return;
   const oz=$('OZ').value.trim()||`P${O.seq}`, tip=$('GT').value.trim()||'—';
   const pid=Math.random().toString(36).slice(2,9), r1=v=>Math.round(v*10)/10;
-  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),pid,oz,tp:TYPES[type].name,polje:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom,tip}));
-  O.pos.push({id:pid,oz,tp:TYPES[type].name,W:last.W,H:last.H,Q:last.Q,gt:tip,svg:$('svg').innerHTML,
+  last.glass.forEach(g=>O.items.push({id:Math.random().toString(36).slice(2,9),pid,oz,tp:typeLabel(),polje:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom,tip}));
+  O.pos.push({id:pid,oz,tp:typeLabel(),W:last.W,H:last.H,Q:last.Q,gt:tip,svg:$('svg').innerHTML,
     cuts:last.cuts.map(c=>({profil:c.profil,el:c.el,len:r1(c.len),kom:c.kom,ugao:c.ugao})),glass:last.glass.map(g=>({name:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom}))});
   O.seq++;
   const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
@@ -679,8 +714,9 @@ armClick($('clearOrder'),'Obriši porudžbinu',clearAll);
 armClick($('newJ'),'Nova',()=>{clearAll();flash('toastTop','Nova porudžbina');});
 
 // ---------- čuvanje / učitavanje (JSON fajl) ----------
+const exportData=()=>JSON.stringify({app:'krojna-lista',v:1,saved:new Date().toISOString(),order:O,params:P});
 $('saveJ').addEventListener('click',async()=>{
-  const data=JSON.stringify({app:'krojna-lista',v:1,saved:new Date().toISOString(),order:O,params:P});
+  const data=exportData();
   const base=`krojna-lista-${O.no}`;
   const download=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));a.download=`${base}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);flash('toastTop',`Preuzeto: ${base}.json`);};
   if(!matchMedia('(pointer:coarse)').matches||!navigator.canShare)return download();
@@ -730,6 +766,64 @@ function importData(d){
   $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):'P1';
   render(); renderOrder();
 }
+
+// ---------- Google Drive ----------
+// OAuth Client ID (javni identifikator, nije tajna) iz Google Cloud Console; prazno = Drive dugmad sakrivena
+const GD_CLIENT_ID='';
+// drive.file: aplikacija vidi samo fajlove koje je sama napravila
+const GD_SCOPE='https://www.googleapis.com/auth/drive.file', GD_FOLDER='Krojna lista';
+let gdTok=null, gdExp=0, gdClient=null;
+if(GD_CLIENT_ID){
+  $('gdSave').hidden=$('gdLoad').hidden=false;
+  const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true; document.head.appendChild(s);
+}
+// token se traži direktno iz klika (inače pregledač blokira Google prozor); čuva se samo u memoriji
+function gdAuth(then){
+  if(gdTok&&Date.now()<gdExp)return then();
+  if(!window.google||!google.accounts)return flash('toastTop','Google se još učitava, pokušajte ponovo');
+  if(!gdClient)gdClient=google.accounts.oauth2.initTokenClient({client_id:GD_CLIENT_ID,scope:GD_SCOPE,callback:()=>{}});
+  gdClient.callback=r=>{if(r.error)return flash('toastTop','Prijava na Google nije uspela'); gdTok=r.access_token; gdExp=Date.now()+(r.expires_in-60)*1000; then();};
+  gdClient.requestAccessToken({prompt:''});
+}
+async function gd(path,opt={}){
+  const r=await fetch('https://www.googleapis.com/'+path,{...opt,headers:{Authorization:'Bearer '+gdTok,...(opt.headers||{})}});
+  if(r.status===401)gdTok=null;
+  if(!r.ok)throw new Error('drive '+r.status);
+  return r;
+}
+const gdQ=q=>gd(`drive/v3/files?q=${encodeURIComponent(q+' and trashed=false')}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&pageSize=30`).then(r=>r.json()).then(j=>j.files||[]);
+async function gdFolder(){
+  const f=await gdQ(`name='${GD_FOLDER}' and mimeType='application/vnd.google-apps.folder'`);
+  if(f.length)return f[0].id;
+  const r=await gd('drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:GD_FOLDER,mimeType:'application/vnd.google-apps.folder'})});
+  return (await r.json()).id;
+}
+async function gdSave(){
+  const data=exportData(), name=`krojna-lista-${O.no}.json`, dir=await gdFolder();
+  const ex=await gdQ(`name='${name}' and '${dir}' in parents`);
+  if(ex.length){await gd(`upload/drive/v3/files/${ex[0].id}?uploadType=media`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:data});}
+  else{
+    const b='kl'+rid(), meta=JSON.stringify({name,parents:[dir],mimeType:'application/json'});
+    await gd('upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':`multipart/related; boundary=${b}`},
+      body:`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${data}\r\n--${b}--`});
+  }
+  flash('toastTop',`Sačuvano na Drive: ${GD_FOLDER}/${name}`);
+}
+async function gdList(){
+  const dir=await gdFolder(), files=await gdQ(`'${dir}' in parents and mimeType='application/json'`);
+  $('gdList').innerHTML=files.length?files.map(f=>`<button type="button" class="btn" data-gd="${esc(f.id)}">${esc(f.name.replace(/\.json$/,''))}<span class="u">${esc(new Date(f.modifiedTime).toLocaleString('sr-RS'))}</span></button>`).join(''):`<div class="empty">Nema sačuvanih porudžbina u folderu „${GD_FOLDER}“.</div>`;
+  $('gdDlg').showModal();
+}
+const gdRun=fn=>gdAuth(()=>fn().catch(()=>flash('toastTop','Google Drive nije dostupan, pokušajte ponovo')));
+$('gdSave').addEventListener('click',()=>gdRun(gdSave));
+$('gdLoad').addEventListener('click',()=>gdRun(gdList));
+$('gdClose').addEventListener('click',()=>$('gdDlg').close());
+$('gdList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-gd]'); if(!b)return;
+  if(O.items.length&&!confirm('Zameniti trenutnu porudžbinu onom sa Drive-a?'))return;
+  gd(`drive/v3/files/${encodeURIComponent(b.dataset.gd)}?alt=media`).then(r=>r.json()).then(d=>{importData(d);$('gdDlg').close();flash('toastTop',`Učitano: ${O.pos.length} poz., ${O.items.length} stakala`);})
+    .catch(()=>flash('toastTop','Fajl sa Drive-a nije ispravan'));
+});
 
 render();
 renderOrder();
