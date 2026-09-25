@@ -86,6 +86,9 @@ summary{cursor:pointer;font:600 13px/1.2 var(--mono);letter-spacing:.08em;text-t
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .formula{font:12.5px/1.6 var(--mono);color:var(--muted);margin-top:14px;overflow-x:auto}
 .formula b{color:var(--ink);font-weight:500}
+.hint{font-size:13px;line-height:1.5;color:var(--muted);margin:8px 0}
+.hint b{color:var(--ink);font-weight:600}
+ul.hint{padding-left:18px}
 .out{display:grid;gap:16px;min-width:0}
 .card{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;min-width:0}
 .card h2{font:600 22px/1.1 var(--display);letter-spacing:.02em;margin:0}
@@ -246,6 +249,7 @@ footer{margin-top:28px;font-size:13px;color:var(--muted);max-width:80ch}
             <b>Lažni srednjak, krilo</b> = (svetlo štoka + 2 × preklop − razmak krila) / 2<br>
             <b>Lažni srednjak, dužina</b> = svetla visina štoka − odbitak
           </div>
+          <div id="how"></div>
         </details>
       </form>
     </aside>
@@ -542,11 +546,34 @@ function render(){
     r.glass.map(g=>`<tr><td>${esc(g.name)}</td><td class="n len">${fmt(g.w)}</td><td class="n len">${fmt(g.h)}</td><td class="n">${g.kom}</td><td class="n">${fmt(Math.round(g.w*g.h*g.kom/1e4)/100)}</td><td>${esc(gt)}</td></tr>`).join('')+
     `</tbody><tfoot><tr><td colspan="3">Ukupno</td><td class="n">${r.glass.reduce((a,g)=>a+g.kom,0)}</td><td class="n">${fmt(Math.round(gArea*100)/100)}</td><td></td></tr></tfoot>`;
   $('glassMeta').textContent=`zazor ${fmt(P.zazorStakla)} mm po strani`;
+  howGlass(r);
   $('addOrder').disabled=$('mAdd').disabled=r.errs.length>0;
 
   const B=barsHtml(groupCuts(r.cuts),12);
   $('opt').innerHTML=B.html;
   $('optMeta').textContent=`ukupno ${B.total} šipki · rez ${fmt(P.rez)} mm`;
+}
+// objašnjenje u „Odbici sistema“: račun stakla korak po korak sa trenutnim odbicima i ovom pozicijom
+function howGlass(r){
+  const f=r.fields.find(x=>x.kind!=='F')||r.fields[0], d=(a,b)=>`${fmt(a)}&nbsp;×&nbsp;${fmt(b)}`, gz=`+ 2 × (falc ${fmt(P.falc)} − zazor ${fmt(P.zazorStakla)})`;
+  const steps=f.kind!=='F'?[
+    `<b>${esc(f.name)}</b> (${esc(TYPES[type].name.toLowerCase())}, otvor ${d(r.W,r.H)})`,
+    `svetlo polja ${d(f.w,f.h)}`,
+    `+ 2 × preklop ${fmt(P.preklop)} = krilo ${d(f.sw,f.sh)}`,
+    `− 2 × krilo ${fmt(P.krilo)} = svetlo krila ${d(f.lw,f.lh)}`,
+    `${gz} = <b>staklo ${d(f.gw,f.gh)}</b>`
+  ]:[
+    `<b>${esc(f.name)}</b> (fiks u štoku, otvor ${d(r.W,r.H)})`,
+    `svetlo polja ${d(f.w,f.h)}`,
+    `${gz} = <b>staklo ${d(f.gw,f.gh)}</b>`
+  ];
+  const k=P.krilo-P.falc+P.zazorStakla;
+  $('how').innerHTML=`<div class="pgroup">Kako se računa staklo</div><div class="formula">${steps.join('<br>')}</div>`+
+    `<p class="hint">Svetlo polja = spoljna mera štoka − 2 × štok. Kod dvokrilnog i trodelnog se oduzme još srednjak, pa se podeli na polja. Krilo i fiks krilo imaju isto staklo.</p>`+
+    `<p class="hint"><b>Svaki odbitak se računa dva puta</b>, sa obe strane stakla. Kada povećate odbitak za 1 mm:</p>`+
+    `<ul class="hint"><li>Krilo, vidna širina: staklo −2 mm</li><li>Dubina falca: staklo +2 mm</li><li>Zazor stakla: staklo −2 mm</li><li>Preklop krila: staklo +2 mm, krilo +2 mm</li><li>Štok, vidna širina: staklo −2 mm, krilo −2 mm</li></ul>`+
+    `<p class="hint"><b>Podešavanje prema gotovom prozoru:</b> izmerite krilo spolja i staklo u njemu. (krilo − staklo) / 2 mora biti jednako: krilo, vidna širina − dubina falca + zazor stakla. Sada je to ${fmt(P.krilo)} − ${fmt(P.falc)} + ${fmt(P.zazorStakla)} = <b>${fmt(k)} mm</b>. Ako vam iz merenja izađe više, povećajte „Krilo, vidna širina“ za razliku. Ako izađe manje, smanjite ga.</p>`+
+    `<p class="hint">Primer: krilo 600, staklo 440 → (600 − 440) / 2 = 80 mm. To je ${fmt(80-k)} mm više od ${fmt(k)}, pa „Krilo, vidna širina“ povećajte za ${fmt(80-k)}.</p>`;
 }
 function groupCuts(cuts){const groups={}; cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);}); return groups;}
 function barsHtml(groups,max){
