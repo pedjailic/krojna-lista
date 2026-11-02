@@ -120,7 +120,7 @@ th{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color
 td{padding:9px 10px;border-bottom:1px solid var(--rule)}
 tbody tr:last-child td{border-bottom:0}
 td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-td.len{font-weight:500;font-size:15px}
+td.len,span.len{font-weight:500;font-size:15px}
 .tag{display:inline-block;font:500 11.5px var(--mono);padding:2px 7px;border-radius:4px;background:var(--accent-soft);color:var(--ink);white-space:nowrap}
 tfoot td{font-weight:600;border-top:1px solid var(--rule);border-bottom:0}
 .opt{display:grid;gap:18px}
@@ -133,6 +133,10 @@ tfoot td{font-weight:600;border-top:1px solid var(--rule);border-bottom:0}
 .seg:nth-child(even){background:var(--bar-b)}
 .seg.off{background:var(--offcut);color:var(--ink);border-right:0}
 .seg.off.ok{background:var(--offcut-ok)}
+.bars.pz .bar{height:34px}
+.seg small{display:block;font-size:9px;opacity:.85;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bars.pz .seg{flex-direction:column;line-height:1.15}
+.bars .bl{margin:-2px 0 4px;font:11px/1.35 var(--mono);color:var(--muted)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
 .toast{font:500 13px var(--mono);color:var(--accent)}
@@ -488,13 +492,13 @@ function compute(){
   return {W,H,Q,Wf,Hf,Lw,Lh,fields,mullions,cuts,glass,errs,sashes:kc};
 }
 
-function optimize(lengths,L,kerf){
-  const arr=lengths.slice().sort((a,b)=>b-a), bars=[];
-  for(const len of arr){
-    if(len>L) continue;
-    let b=bars.find(b=>b.rem>=len);
+function optimize(pieces,L,kerf){
+  const arr=pieces.slice().sort((a,b)=>b.len-a.len), bars=[];
+  for(const p of arr){
+    if(p.len>L) continue;
+    let b=bars.find(b=>b.rem>=p.len);
     if(!b){b={cuts:[],rem:L};bars.push(b);}
-    b.cuts.push(len); b.rem-=len+kerf;
+    b.cuts.push(p); b.rem-=p.len+kerf;
   }
   bars.forEach(b=>b.rem=Math.max(0,b.rem));
   return bars;
@@ -588,15 +592,17 @@ function howGlass(r){
     `<p class="hint"><b>Podešavanje prema gotovom prozoru:</b> izmerite krilo spolja i staklo u njemu. (krilo − staklo) / 2 mora biti jednako: krilo, vidna širina − dubina falca + zazor stakla. Sada je to ${fmt(P.krilo)} − ${fmt(P.falc)} + ${fmt(P.zazorStakla)} = <b>${fmt(k)} mm</b>. Ako vam iz merenja izađe više, povećajte „Krilo, vidna širina“ za razliku. Ako izađe manje, smanjite ga.</p>`+
     `<p class="hint">Primer: krilo 600, staklo 440 → (600 − 440) / 2 = 80 mm. To je ${fmt(80-k)} mm više od ${fmt(k)}, pa „Krilo, vidna širina“ povećajte za ${fmt(80-k)}.</p>`;
 }
-function groupCuts(cuts){const groups={}; cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push(c.len);}); return groups;}
+function groupCuts(cuts){const groups={}; cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push({len:c.len,oz:c.oz});}); return groups;}
+// tekst ispod šipke, redom kako se seče; uski komadi u traci nemaju mesta za meru i poziciju
+function runs(cuts){const r=[]; cuts.forEach(p=>{const l=r[r.length-1]; if(l&&l.len===p.len&&l.oz===p.oz)l.n++; else r.push({len:p.len,oz:p.oz,n:1});}); return r.map(x=>`${x.n>1?x.n+'× ':''}${fmt(x.len)} ${x.oz}`).join(' · ');}
 function barsHtml(groups,max){
   let total=0;
   const html=Object.entries(groups).map(([prof,lens])=>{
     const bars=optimize(lens,P.sipka,P.rez); total+=bars.length;
-    const used=lens.filter(l=>l<=P.sipka).reduce((a,b)=>a+b,0), util=bars.length?used/(bars.length*P.sipka)*100:0;
-    const shown=bars.slice(0,max);
-    return `<div class="og"><h3>${esc(prof)}</h3><p>${bars.length} ${bars.length===1?'šipka':(bars.length<5?'šipke':'šipki')} × ${fmt(P.sipka)} mm · iskorišćenje ${fmt(Math.round(util))}% · ${lens.length} rezova</p><div class="bars">`+
-      shown.map(b=>`<div class="bar">${b.cuts.map(l=>`<span class="seg" style="flex:0 0 ${l/P.sipka*100}%" title="${fmt(l)} mm">${l/P.sipka>0.09?fmt(l):''}</span>`).join('')}${b.rem>0?`<span class="seg off${b.rem>=P.minOstatak?' ok':''}" style="flex:1 1 auto" title="ostatak ${fmt(b.rem)} mm">${b.rem/P.sipka>0.09?fmt(b.rem):''}</span>`:''}</div>`).join('')+
+    const used=lens.filter(p=>p.len<=P.sipka).reduce((a,p)=>a+p.len,0), util=bars.length?used/(bars.length*P.sipka)*100:0;
+    const shown=bars.slice(0,max), pz=lens.some(p=>p.oz);
+    return `<div class="og"><h3>${esc(prof)}</h3><p>${bars.length} ${bars.length===1?'šipka':(bars.length<5?'šipke':'šipki')} × ${fmt(P.sipka)} mm · iskorišćenje ${fmt(Math.round(util))}% · ${lens.length} rezova</p><div class="bars${pz?' pz':''}">`+
+      shown.map(b=>`<div class="bar">${b.cuts.map(p=>`<span class="seg" style="flex:0 0 ${p.len/P.sipka*100}%" title="${fmt(p.len)} mm${p.oz?' · '+esc(p.oz):''}">${p.len/P.sipka>0.09?fmt(p.len)+(p.oz?`<small>${esc(p.oz)}</small>`:''):''}</span>`).join('')}${b.rem>0?`<span class="seg off${b.rem>=P.minOstatak?' ok':''}" style="flex:1 1 auto" title="ostatak ${fmt(b.rem)} mm">${b.rem/P.sipka>0.09?fmt(b.rem):''}</span>`:''}</div>${pz?`<p class="bl">${esc(runs(b.cuts))}</p>`:''}`).join('')+
       (bars.length>max?`<p>i još ${bars.length-max} šipki</p>`:'')+`</div></div>`;
   }).join('');
   return {html,total};
@@ -692,11 +698,12 @@ function renderReview(){
   if(rv.hidden)return;
   const agg=new Map();
   O.pos.forEach(p=>p.cuts.forEach(c=>{const k=`${c.profil}|${c.len}|${c.ugao}`, a=agg.get(k);
-    if(a){a.kom+=c.kom; if(!a.oz.includes(p.oz))a.oz.push(p.oz);} else agg.set(k,{profil:c.profil,len:c.len,ugao:c.ugao,kom:c.kom,oz:[p.oz]});}));
+    if(a){a.kom+=c.kom; a.oz.set(p.oz,(a.oz.get(p.oz)||0)+c.kom);} else agg.set(k,{profil:c.profil,len:c.len,ugao:c.ugao,kom:c.kom,oz:new Map([[p.oz,c.kom]])});}));
   const A=[...agg.values()].sort((a,b)=>a.profil.localeCompare(b.profil)||b.len-a.len);
+  // uz svaku meru: koje pozicije i koliko komada za svaku
   $('revCuts').innerHTML=`<thead><tr><th>Profil</th><th class="n">Dužina mm</th><th class="n">Kom</th><th class="n">Rez</th></tr></thead><tbody>`+
-    A.map(c=>`<tr><td><span class="tag">${esc(c.profil)}</span><div class="u">${esc(c.oz.join(', '))}</div></td><td class="n len">${fmt(c.len)}</td><td class="n">${c.kom}</td><td class="n">${esc(ug(c.ugao))}</td></tr>`).join('')+'</tbody>';
-  const B=barsHtml(groupCuts(A),Infinity);
+    A.map(c=>`<tr><td><span class="tag">${esc(c.profil)}</span></td><td class="n"><span class="len">${fmt(c.len)}</span><div class="u">${esc([...c.oz].map(([o,k])=>`${o} ×${k}`).join(', '))}</div></td><td class="n">${c.kom}</td><td class="n">${esc(ug(c.ugao))}</td></tr>`).join('')+'</tbody>';
+  const B=barsHtml(groupCuts(O.pos.flatMap(p=>p.cuts.map(c=>({profil:c.profil,len:c.len,kom:c.kom,oz:p.oz})))),Infinity);
   $('revOpt').innerHTML=B.html;
   const win=O.pos.reduce((a,p)=>a+p.Q,0), G=O.pos.flatMap(p=>p.glass);
   $('revMeta').textContent=`${n} poz. · ${win} kom prozora · ${B.total} šipki × ${fmt(P.sipka)} mm · staklo ${G.reduce((a,g)=>a+g.kom,0)} kom, ${fmt2(G.reduce((a,g)=>a+g.w*g.h*g.kom,0)/1e6)} m²`;
