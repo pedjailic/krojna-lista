@@ -566,9 +566,9 @@ function render(){
   howGlass(r);
   $('addOrder').disabled=$('mAdd').disabled=r.errs.length>0;
 
-  const B=barsHtml(groupCuts(r.cuts),12);
+  const oz=$('OZ').value.trim(), B=barsHtml(groupCuts(r.cuts.map(c=>({profil:c.profil,len:c.len,kom:c.kom,oz}))),12);
   $('opt').innerHTML=B.html;
-  $('optMeta').textContent=`ukupno ${B.total} šipki · rez ${fmt(P.rez)} mm`;
+  $('optMeta').textContent=`${oz?oz+' · ':''}ukupno ${B.total} šipki · rez ${fmt(P.rez)} mm`;
 }
 // objašnjenje u „Odbici sistema“: račun stakla korak po korak sa trenutnim odbicima i ovom pozicijom
 function howGlass(r){
@@ -594,7 +594,7 @@ function howGlass(r){
 }
 function groupCuts(cuts){const groups={}; cuts.forEach(c=>{(groups[c.profil]=groups[c.profil]||[]); for(let i=0;i<c.kom;i++)groups[c.profil].push({len:c.len,oz:c.oz});}); return groups;}
 // tekst ispod šipke, redom kako se seče; uski komadi u traci nemaju mesta za meru i poziciju
-function runs(cuts){const r=[]; cuts.forEach(p=>{const l=r[r.length-1]; if(l&&l.len===p.len&&l.oz===p.oz)l.n++; else r.push({len:p.len,oz:p.oz,n:1});}); return r.map(x=>`${x.n>1?x.n+'× ':''}${fmt(x.len)} ${x.oz}`).join(' · ');}
+function runs(cuts){const r=[]; cuts.forEach(p=>{const l=r[r.length-1]; if(l&&fmt(l.len)===fmt(p.len)&&l.oz===p.oz)l.n++; else r.push({len:p.len,oz:p.oz,n:1});}); return r.map(x=>`${x.n>1?x.n+'× ':''}${fmt(x.len)} ${x.oz}`).join(' · ');}
 function barsHtml(groups,max){
   let total=0;
   const html=Object.entries(groups).map(([prof,lens])=>{
@@ -729,7 +729,7 @@ function addToOrder(toastId){
     cuts:last.cuts.map(c=>({profil:c.profil,el:c.el,len:r1(c.len),kom:c.kom,ugao:c.ugao})),glass:last.glass.map(g=>({name:g.name,w:r1(g.w),h:r1(g.h),kom:g.kom}))});
   O.seq++;
   const m=oz.match(/^(.*?)(\d+)$/); $('OZ').value=m?m[1]+(parseInt(m[2],10)+1):oz;
-  saveO(); renderOrder();
+  saveO(); render(); renderOrder();
   const t=$(toastId); t.textContent=`Dodato: ${oz} · ${last.glass.length} ${last.glass.length===1?'staklo':'stakla'}`; setTimeout(()=>t.textContent='',2500);
 }
 $('addOrder').addEventListener('click',()=>addToOrder('toastAdd'));
@@ -755,7 +755,7 @@ function armClick(b,label,fn){
     clearTimeout(t);b.classList.remove('arm');b.textContent=label;fn();
   });
 }
-function clearAll(){O.items=[];O.pos=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';renderOrder();}
+function clearAll(){O.items=[];O.pos=[];O.seq=1;O.no=newNo();saveO();$('OZ').value='P1';render();renderOrder();}
 const flash=(id,m)=>{const t=$(id);t.textContent=m;setTimeout(()=>t.textContent='',3000);};
 armClick($('clearOrder'),'Obriši porudžbinu',clearAll);
 armClick($('newJ'),'Nova',()=>{clearAll();flash('toastTop','Nova porudžbina');});
