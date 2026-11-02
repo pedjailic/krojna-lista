@@ -24,7 +24,7 @@ Porudžbina se čuva u pregledaču na tom uređaju dok je ne obrišete.
 
 ## Tipovi pozicija
 
-Fiksni · Jednokrilni · Dvokrilni sa srednjakom · Dvokrilni sa lažnim srednjakom · Krilo + fiks · Krilo – fiks – krilo · Krilo + nadsvetlo
+Fiksni · Jednokrilni · Dvokrilni sa srednjakom · Dvokrilni sa lažnim srednjakom · Krilo + fiks · Krilo – fiks – krilo · Trokrilni sa dva srednjaka · Trokrilni, srednjak + lažni srednjak · Krilo + nadsvetlo
 
 ## Formule
 

@@ -357,6 +357,8 @@ const TYPES={
   ls:{name:'Dvokrilni, lažni srednjak',split:'ls',fields:['K','K']},
   kf:{name:'Krilo + fiks',split:'v',fields:['K','F'],custom:true},
   k3:{name:'Krilo – fiks – krilo',split:'v',fields:['K','F','K']},
+  t3:{name:'Trokrilni sa dva srednjaka',split:'v',fields:['K','K','K']},
+  t3ls:{name:'Trokrilni, srednjak + lažni srednjak',split:'vls',fields:['K','K','K']},
   nad:{name:'Krilo + nadsvetlo',split:'h',fields:['F','K'],custom:true}
 };
 const $=id=>document.getElementById(id);
@@ -375,9 +377,9 @@ function glyph(t){
   const n=T.fields.length;
   T.fields.forEach((k,i)=>{
     let fx,fy,fw,fh;
-    if(T.split==='v'||T.split==='ls'){fw=w/n;fx=x0+i*fw;fy=y0;fh=h;}else{fh=i===0?h*0.3:h*0.7;fy=i===0?y0:y0+h*0.3;fx=x0;fw=w;}
-    if(i>0&&T.split==='ls'){s+=`<rect x="${fx-1.5}" y="${y0+3}" width="3" height="${h-6}"/>`;}
-    else if(i>0){s+=T.split==='v'?`<line x1="${fx}" y1="${y0}" x2="${fx}" y2="${y0+h}"/>`:`<line x1="${x0}" y1="${fy}" x2="${x0+w}" y2="${fy}"/>`;}
+    if(T.split!=='h'){fw=w/n;fx=x0+i*fw;fy=y0;fh=h;}else{fh=i===0?h*0.3:h*0.7;fy=i===0?y0:y0+h*0.3;fx=x0;fw=w;}
+    if(i>0&&(T.split==='ls'||(T.split==='vls'&&i===2))){s+=`<rect x="${fx-1.5}" y="${y0+3}" width="3" height="${h-6}"/>`;}
+    else if(i>0){s+=T.split!=='h'?`<line x1="${fx}" y1="${y0}" x2="${fx}" y2="${y0+h}"/>`:`<line x1="${x0}" y1="${fy}" x2="${x0+w}" y2="${fy}"/>`;}
     if(k==='K'){const right=(T.split!=='h'&&n>1&&i>=n/2); const hx=right?fx+fw-2:fx+2, tx=right?fx+2:fx+fw-2; s+=`<path d="M${hx} ${fy+2} L${tx} ${fy+fh/2} L${hx} ${fy+fh-2}"/>`;}
   });
   return s+'</svg>';
@@ -397,9 +399,10 @@ function typeLabel(){const T=TYPES[type], k=curKinds(); return k.every((x,i)=>x=
 function renderKinds(){
   const T=TYPES[type], k=curKinds(), n=k.length;
   const names=n===1?['Polje']:T.split==='h'?['Gore','Dole']:n===2?['Levo','Desno']:['Levo','Sredina','Desno'];
-  const opts=T.split==='ls'?['K','FK']:['K','FK','F'];
+  // krila na lažnom srednjaku ne mogu biti fiks u štoku
+  const opts=i=>T.split==='ls'||(T.split==='vls'&&i>0)?['K','FK']:['K','FK','F'];
   const lbl={K:'Krilo (otvara se)',FK:'Fiks krilo',F:'Fiks u štoku'};
-  $('kinds').innerHTML=k.map((x,i)=>`<label for="kind-${i}">${names[i]}<select id="kind-${i}" data-f="${i}">${opts.map(o=>`<option value="${o}"${o===x?' selected':''}>${lbl[o]}</option>`).join('')}</select></label>`).join('');
+  $('kinds').innerHTML=k.map((x,i)=>`<label for="kind-${i}">${names[i]}<select id="kind-${i}" data-f="${i}">${opts(i).map(o=>`<option value="${o}"${o===x?' selected':''}>${lbl[o]}</option>`).join('')}</select></label>`).join('');
 }
 renderKinds();
 
@@ -437,6 +440,16 @@ function compute(){
     fields.push({x:sx2+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:K[1],hinge:'R'});
     const len=Lh-P.lsOdb;
     mullions.push({x:P.stok+Lw/2-P.lsSir/2,y:P.stok+P.lsOdb/2,w:P.lsSir,h:len,dir:'ls',len});
+  } else if(T.split==='vls'){
+    // levo polje do srednjaka, desno dva krila na lažnom srednjaku; sva tri krila iste širine
+    const f1=(Lw-M-2*P.preklop-P.lsRazmak)/3, xs=P.stok+f1+M, R=Lw-f1-M;
+    const Sw=(R+2*P.preklop-P.lsRazmak)/2, sx1=xs-P.preklop, sx2=sx1+Sw+P.lsRazmak;
+    fields.push({x:P.stok,y:P.stok,w:f1,h:Lh,kind:K[0],hinge:'L'});
+    mullions.push({x:P.stok+f1,y:P.stok,w:M,h:Lh,dir:'v',len:Lh+2*P.sredDod});
+    fields.push({x:sx1+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:K[1],hinge:'L',passive:true});
+    fields.push({x:sx2+P.preklop,y:P.stok,w:Sw-2*P.preklop,h:Lh,kind:K[2],hinge:'R'});
+    const len=Lh-P.lsOdb;
+    mullions.push({x:xs+R/2-P.lsSir/2,y:P.stok+P.lsOdb/2,w:P.lsSir,h:len,dir:'ls',len});
   } else {
     const f1=pos-P.stok-M/2, hs=[f1,Lh-M-f1]; let y=P.stok;
     hs.forEach((h,i)=>{fields.push({x:P.stok,y,w:Lw,h,kind:K[i],hinge:'L'}); y+=h; if(i<n-1){mullions.push({x:P.stok,y,w:Lw,h:M,dir:'h',len:Lw+2*P.sredDod}); y+=M;}});
@@ -445,13 +458,13 @@ function compute(){
   const add=(profil,el,len,kom,ugao)=>cuts.push({profil,el,len,kom:kom*Q,ugao});
   add('Štok','Štok, gore i dole',Wf+2*v,2,'45° / 45°');
   add('Štok','Štok, levo i desno',Hf+2*v,2,'45° / 45°');
-  mullions.forEach((m,i)=>m.dir==='ls'?add('Lažni srednjak','Lažni srednjak, na pasivnom krilu',m.len,1,'90° / 90°'):add('Srednjak',m.dir==='v'?`Srednjak ${mullions.length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
+  mullions.forEach((m,i)=>m.dir==='ls'?add('Lažni srednjak','Lažni srednjak, na pasivnom krilu',m.len,1,'90° / 90°'):add('Srednjak',m.dir==='v'?`Srednjak ${mullions.filter(x=>x.dir==='v').length>1?i+1:''}`.trim():'Prečka (horizontalna)',m.len,1,'90° / 90°'));
   let kc=0,fc=0;
   fields.forEach(f=>{
     // fiks krilo (FK) = isti profil, rezovi i staklo kao krilo, samo se ne otvara
     if(f.kind!=='F'){
       kc++; const fk=f.kind==='FK';
-      const nm=fk?`Fiks krilo ${kc}`:`Krilo ${kc}${f.passive?' (pasivno)':(T.split==='ls'?' (aktivno)':'')}`, nmS=`${fk?'fiks krilo':'krilo'} ${kc}`;
+      const nm=fk?`Fiks krilo ${kc}`:`Krilo ${kc}${f.passive?' (pasivno)':(T.split==='ls'||(T.split==='vls'&&kc>1)?' (aktivno)':'')}`, nmS=`${fk?'fiks krilo':'krilo'} ${kc}`;
       f.sw=f.w+2*P.preklop; f.sh=f.h+2*P.preklop;
       f.lw=f.sw-2*P.krilo; f.lh=f.sh-2*P.krilo;
       f.name=nm;
